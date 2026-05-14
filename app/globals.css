@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+}
+
+@layer utilities {
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted) / 0.7) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+
+  .deadline-urgent {
+    @apply text-red-500 dark:text-red-400;
+  }
+
+  .deadline-warning {
+    @apply text-amber-500 dark:text-amber-400;
+  }
+
+  .deadline-safe {
+    @apply text-emerald-600 dark:text-emerald-400;
+  }
+
+  .opportunity-card {
+    @apply bg-card rounded-xl border border-border shadow-card transition-all duration-200;
+  }
+
+  .opportunity-card:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+
+  .dark .opportunity-card {
+    @apply shadow-card-dark;
+  }
+
+  .dark .opportunity-card:hover {
+    @apply shadow-card-hover-dark;
+  }
+
+  .type-badge-placement { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
+  .type-badge-internship { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400; }
+  .type-badge-hackathon { @apply bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400; }
+  .type-badge-scholarship { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
+  .type-badge-fellowship { @apply bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400; }
+  .type-badge-competition { @apply bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400; }
+  .type-badge-campus_drive { @apply bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
+  .type-badge-other { @apply bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground; }
+
+/* Prose styling */
+.prose-opportunity h3 { @apply text-base font-semibold text-foreground mb-2; }
+.prose-opportunity ul { @apply space-y-1 pl-4; }
+.prose-opportunity li { @apply text-sm text-muted-foreground list-disc; }
