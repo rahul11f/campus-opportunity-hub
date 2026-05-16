@@ -1,34 +1,41 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function NotificationsPage() {
-  const auth = createClient();
+import { useEffect, useState } from 'react';
+import { Bell } from 'lucide-react';
 
-  const {
-    data: { user },
-  } = await auth.auth.getUser();
+export default function NotificationsPage() {
+  const [items, setItems] = useState<any[]>([]);
 
-  if (!user) {
-    redirect('/login');
+  async function load() {
+    const res = await fetch('/api/student/notifications');
+    const data = await res.json();
+    setItems(data || []);
   }
 
-  const supabase = createServiceClient();
+  useEffect(() => {
+    load();
 
-  const { data } = await supabase
-    .from('student_notifications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', {
-      ascending: false,
-    });
+    const interval = setInterval(load, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="p-8 space-y-8">
-      <h1 className="text-5xl font-bold">
-        Notifications
-      </h1>
+      <div className="flex items-center gap-3">
+        <Bell />
+        <h1 className="text-5xl font-bold">
+          Notifications
+        </h1>
+      </div>
 
-      {(data || []).map((item) => (
+      {items.length === 0 && (
+        <div className="rounded-3xl border bg-card p-8">
+          No notifications yet
+        </div>
+      )}
+
+      {items.map((item) => (
         <div
           key={item.id}
           className="rounded-3xl border bg-card p-6"
