@@ -26,6 +26,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CampusHub',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

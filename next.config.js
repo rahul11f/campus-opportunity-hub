@@ -1,3 +1,10 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -16,6 +23,7 @@ const nextConfig = {
       },
     ],
   },
+
   async headers() {
     return [
       {
@@ -37,28 +45,17 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pagead2.googlesyndication.com https://www.googletagmanager.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
-              "worker-src 'self' blob:",
-              "connect-src 'self' https://*.supabase.co https://*.upstash.io https://generativelanguage.googleapis.com",
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-            ].join('; '),
-          },
         ],
       },
     ];
   },
+
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse', 'cheerio'],
+    serverComponentsExternalPackages: [
+      'pdf-parse',
+      'cheerio',
+    ],
   },
 };
 
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);
