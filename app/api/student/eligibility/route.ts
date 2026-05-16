@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
-export async function POST(request: NextRequest) {
-  const supabase = createClient();
+export async function POST(req: Request) {
+  const auth = createClient();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await auth.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -15,58 +15,84 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const service = createServiceClient();
+  const { opportunityId } = await req.json();
 
-  const { opportunityId } = await request.json();
+  const supabase = createServiceClient();
 
-  if (!opportunityId) {
-    return NextResponse.json(
-      { error: 'Opportunity ID required' },
-      { status: 400 }
-    );
-  }
-
-  const { data: student } = await service
+  const { data: profile } = await supabase
     .from('student_profiles')
     .select('*')
     .eq('user_id', user.id)
-    .single();
-
-  if (!student?.university_roll_no) {
-    return NextResponse.json(
-      {
-        eligible: false,
-        reason: 'Complete your student profile first',
-      },
-      { status: 200 }
-    );
-  }
-
-  const { data: match } = await service
-    .from('eligibility_candidates')
-    .select('*')
-    .eq('opportunity_id', opportunityId)
-    .eq(
-      'university_roll_no',
-      student.university_roll_no
-    )
     .maybeSingle();
 
-  if (!match) {
+  const { data: opp } = await supabase
+    .from('opportunities')
+    .select('*')
+    .eq('id', opportunityId)
+    .maybeSingle();
+
+  if (!profile || !opp) {
     return NextResponse.json({
       eligible: false,
-      reason:
-        'No eligibility list found or your roll number is not listed',
+      reasons: ['Missing student profile or opportunity'],
     });
   }
 
+  const reasons = [];
+  let eligible = true;
+
+  const requiredCgpa =
+    opp?.eligibility?.cgpa || null;
+
+  const requiredBatch =
+    opp?.eligibility?.batch || null;
+
+  const branches =
+    opp?.eligibility?.branches || [];
+
+  if (
+    requiredCgpa &&
+    Number(profile.cgpa || 0) <
+      Number(requiredCgpa)
+  ) {
+    eligible = false;
+    reasons.push(
+      `Required CGPA: ${requiredCgpa}`
+    );
+  }
+
+  if (
+    requiredBatch &&
+    String(profile.batch || '') !==
+      String(requiredBatch)
+  ) {
+    eligible = false;
+    reasons.push(
+      `Required batch: ${requiredBatch}`
+    );
+  }
+
+  if (
+    branches.length &&
+    !branches.some((b: string) =>
+      String(profile.branch || '')
+        .toLowerCase()
+        .includes(b.toLowerCase())
+    )
+  ) {
+    eligible = false;
+    reasons.push(
+      'Branch mismatch'
+    );
+  }
+
   return NextResponse.json({
-    eligible: true,
-    candidate: {
-      name: match.student_name,
-      rollNo: match.university_roll_no,
-      branch: match.branch,
-      batch: match.batch,
+    eligible,
+    reasons,
+    profile: {
+      branch: profile.branch,
+      batch: profile.batch,
+      cgpa: profile.cgpa,
     },
   });
 }
