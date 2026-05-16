@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
 import { OpportunityCreateSchema } from '@/lib/validators';
 import { z } from 'zod';
 
-const PartialOpportunitySchema = OpportunityCreateSchema.partial();
+const PartialOpportunitySchema =
+  OpportunityCreateSchema.partial();
+
 const IdSchema = z.string().uuid();
 
 async function getAuthenticatedAdmin() {
@@ -15,12 +20,17 @@ async function getAuthenticatedAdmin() {
 
   if (!user) return null;
 
-  const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '')
+  const adminEmails = (
+    process.env.ADMIN_EMAIL_WHITELIST || ''
+  )
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
 
-  if (adminEmails.length > 0 && !adminEmails.includes(user.email || '')) {
+  if (
+    adminEmails.length > 0 &&
+    !adminEmails.includes(user.email || '')
+  ) {
     return null;
   }
 
@@ -47,6 +57,7 @@ export async function GET(
     .from('opportunities')
     .select('*')
     .eq('id', parsedId.data);
+
   if (!admin) {
     query = query
       .eq('is_published', true)
@@ -98,22 +109,45 @@ export async function PATCH(
     );
   }
 
-  const parsed = PartialOpportunitySchema.safeParse(body);
+  const parsed = PartialOpportunitySchema.safeParse(
+    body
+  );
 
-  if (!parsed.success) {
+  const rawBody = body as Record<string, unknown>;
+
+  const adminPatch = {
+    ...(typeof rawBody.is_published === 'boolean'
+      ? { is_published: rawBody.is_published }
+      : {}),
+    ...(typeof rawBody.is_expired === 'boolean'
+      ? { is_expired: rawBody.is_expired }
+      : {}),
+    ...(typeof rawBody.featured === 'boolean'
+      ? { featured: rawBody.featured }
+      : {}),
+  };
+
+  if (
+    !parsed.success &&
+    Object.keys(adminPatch).length === 0
+  ) {
     return NextResponse.json(
       { error: 'Validation failed' },
       { status: 422 }
     );
   }
 
+  const updatePayload = {
+    ...(parsed.success ? parsed.data : {}),
+    ...adminPatch,
+    updated_at: new Date().toISOString(),
+  };
+
   const serviceClient = createServiceClient();
+
   const { data } = await serviceClient
     .from('opportunities')
-    .update({
-      ...parsed.data,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', parsedId.data)
     .select()
     .single();
@@ -125,12 +159,14 @@ export async function PATCH(
     );
   }
 
-  await serviceClient.from('admin_logs').insert({
-    admin_id: admin.id,
-    action: `Updated opportunity: ${parsedId.data}`,
-    opportunity_id: parsedId.data,
-    metadata: parsed.data,
-  });
+  await serviceClient
+    .from('admin_logs')
+    .insert({
+      admin_id: admin.id,
+      action: `Updated opportunity: ${parsedId.data}`,
+      opportunity_id: parsedId.data,
+      metadata: updatePayload,
+    });
 
   return NextResponse.json(data);
 }
@@ -159,23 +195,32 @@ export async function DELETE(
 
   const serviceClient = createServiceClient();
 
-  const { data: existing } = await serviceClient
-    .from('opportunities')
-    .select('role, company')
-    .eq('id', parsedId.data)
-    .single();
+  const { data: existing } =
+    await serviceClient
+      .from('opportunities')
+      .select('role, company')
+      .eq('id', parsedId.data)
+      .single();
 
   await serviceClient
     .from('opportunities')
     .delete()
     .eq('id', parsedId.data);
 
-  await serviceClient.from('admin_logs').insert({
-    admin_id: admin.id,
-    action: `Deleted opportunity: ${existing?.role || 'unknown'} at ${existing?.company || 'unknown'}`,
-    opportunity_id: parsedId.data,
-    metadata: {},
-  });
+  await serviceClient
+    .from('admin_logs')
+    .insert({
+      admin_id: admin.id,
+      action: `Deleted opportunity: ${
+        existing?.role || 'unknown'
+      } at ${
+        existing?.company || 'unknown'
+      }`,
+      opportunity_id: parsedId.data,
+      metadata: {},
+    });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+  });
 }

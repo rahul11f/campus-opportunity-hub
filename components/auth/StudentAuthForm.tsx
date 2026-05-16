@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -176,7 +176,18 @@ export function StudentAuthForm() {
             ? 'New user? Create account'
             : 'Already have an account? Login'}
         </button>
+
+<div className="mt-6 text-center space-y-2">
+  <a href="/" className="block text-sm text-muted-foreground hover:text-primary">
+    Continue browsing homepage
+  </a>
+
+  <a href="/admin/login" className="block text-sm text-primary">
+    Admin login
+  </a>
+</div>
       </div>
     </div>
   );
 }
+

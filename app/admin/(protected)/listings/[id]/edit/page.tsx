@@ -1,22 +1,35 @@
-import { Metadata } from 'next';
+﻿import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { OpportunityForm } from '@/components/admin/OpportunityForm';
+import { EligibilityUploader } from '@/components/admin/EligibilityUploader';
 import { Opportunity } from '@/types/opportunity';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export const metadata: Metadata = { title: 'Edit Listing | Admin' };
+export const metadata: Metadata = {
+  title: 'Edit Listing | Admin',
+};
 
-export default async function EditListingPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function EditListingPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const supabase = createServiceClient();
+
   const { data } = await supabase
     .from('opportunities')
     .select('*')
     .eq('id', params.id)
     .single();
 
-  if (!data) notFound();
+  if (!data) {
+    notFound();
+  }
 
   const opp = data as Opportunity;
 
@@ -38,17 +51,20 @@ export default async function EditListingPage({ params }: { params: { id: string
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto space-y-8">
       <Link
         href="/admin/listings"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to listings
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Edit Listing</h1>
+      <div>
+        <h1 className="text-2xl font-bold">
+          Edit Listing
+        </h1>
+
         <p className="text-sm text-muted-foreground mt-1">
           {opp.role} at {opp.company}
         </p>
@@ -59,6 +75,11 @@ export default async function EditListingPage({ params }: { params: { id: string
         rawText={opp.raw_text || ''}
         sourceLink={opp.source_link}
         existingId={opp.id}
+      />
+
+      <EligibilityUploader
+        opportunityId={opp.id}
+        collegeId={opp.college_id || undefined}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
@@ -25,33 +25,50 @@ const SORT_OPTIONS = [
 export function FilterBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const currentType = searchParams.get('type') || '';
   const currentSort = searchParams.get('sort') || 'latest';
+  const currentQuery = searchParams.get('q') || '';
 
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
+
       if (value) {
         params.set(key, value);
       } else {
         params.delete(key);
       }
+
       params.delete('page');
-      router.push(`/?${params.toString()}`);
+
+      router.push(`/search?${params.toString()}`);
     },
     [router, searchParams]
   );
 
-  const hasFilters = currentType !== '';
+  const clearFilters = () => {
+    const params = new URLSearchParams();
+
+    if (currentQuery) {
+      params.set('q', currentQuery);
+    }
+
+    router.push(`/search?${params.toString()}`);
+  };
+
+  const hasFilters =
+    currentType !== '' ||
+    currentSort !== 'latest';
 
   return (
-    <div className="space-y-3">
-      {/* Type filter chips */}
+    <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
           <SlidersHorizontal className="w-3 h-3" />
           Filter:
         </span>
+
         {TYPES.map((type) => (
           <motion.button
             key={type.value}
@@ -69,12 +86,7 @@ export function FilterBar() {
 
         {hasFilters && (
           <button
-            onClick={() => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.delete('type');
-              params.delete('page');
-              router.push(`/?${params.toString()}`);
-            }}
+            onClick={clearFilters}
             className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -83,25 +95,25 @@ export function FilterBar() {
         )}
       </div>
 
-      {/* Sort + Location row */}
       <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-xs text-muted-foreground">
+          Sort:
+        </span>
+
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">Sort:</span>
-          <div className="flex items-center gap-1">
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => updateParam('sort', opt.value)}
-                className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${
-                  currentSort === opt.value
-                    ? 'bg-secondary text-foreground font-medium'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => updateParam('sort', opt.value)}
+              className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${
+                currentSort === opt.value
+                  ? 'bg-secondary text-foreground font-medium'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

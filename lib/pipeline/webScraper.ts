@@ -167,7 +167,9 @@ export async function scrapeGoogleDoc(
   const response = await fetchWithSsrfProtection(exportUrl);
 
   if (!response.ok) {
-    throw new Error(`Could not fetch Google Doc: ${response.status}`);
+    throw new Error(
+      `Could not fetch Google Doc: ${response.status}`
+    );
   }
 
   const text = await response.text();
@@ -190,6 +192,17 @@ export async function fetchPdfText(url: string): Promise<{
   const buffer = await response.arrayBuffer();
   const nodeBuffer = Buffer.from(buffer);
 
+  return parsePdfBuffer(nodeBuffer);
+}
+
+export async function parsePdfBuffer(
+  nodeBuffer: Buffer
+): Promise<{
+  text: string;
+  pageCount: number;
+  title: string;
+  isImageOnly: boolean;
+}> {
   try {
     const pdfParse = (await import('pdf-parse')).default;
     const data = await pdfParse(nodeBuffer);

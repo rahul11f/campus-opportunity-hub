@@ -1,0 +1,829 @@
+-- ============================================================
+-- Campus Opportunity Hub — Supabase Schema
+-- ============================================================
+
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- ============================================================
+-- TABLE: opportunities
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.opportunities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company TEXT NOT NULL,
+  role TEXT NOT NULL,
+
+  type TEXT CHECK (
+    type IN (
+      'placement',
+      'internship',
+      'hackathon',
+      'scholarship',
+      'campus_drive',
+      'fellowship',
+      'competition',
+      'other'
+    )
+  ),
+
+  salary TEXT,
+  location TEXT,
+  eligibility JSONB,
+  skills TEXT[],
+  responsibilities TEXT[],
+  interview_process JSONB,
+  instructions TEXT,
+  apply_link TEXT,
+  source_link TEXT,
+  raw_text TEXT,
+  deadline TIMESTAMPTZ,
+
+  featured BOOLEAN DEFAULT false,
+  is_expired BOOLEAN DEFAULT false,
+  is_published BOOLEAN DEFAULT false,
+
+  tags TEXT[],
+  views_count INTEGER DEFAULT 0,
+
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- ============================================================
+-- FULL TEXT SEARCH COLUMN
+-- ============================================================
+
+ALTER TABLE public.opportunities
+ADD COLUMN IF NOT EXISTS fts_vector TSVECTOR;
+
+UPDATE public.opportunities
+SET fts_vector =
+  to_tsvector(
+    'english',
+    coalesce(company,'') || ' ' ||
+    coalesce(role,'') || ' ' ||
+    coalesce(location,'') || ' ' ||
+    coalesce(salary,'') || ' ' ||
+    coalesce(array_to_string(skills, ' '),'') || ' ' ||
+    coalesce(array_to_string(tags, ' '),'')
+  );
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_fts
+ON public.opportunities
+USING GIN (fts_vector);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_type
+ON public.opportunities (type);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_published
+ON public.opportunities (is_published, is_expired);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_deadline
+ON public.opportunities (deadline);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_featured
+ON public.opportunities (featured);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_created_at
+ON public.opportunities (created_at DESC);
+
+-- ============================================================
+-- TABLE: scrape_cache
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.scrape_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  url TEXT UNIQUE NOT NULL,
+  content TEXT,
+  scraped_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_scrape_cache_url
+ON public.scrape_cache (url);
+
+CREATE INDEX IF NOT EXISTS idx_scrape_cache_expires
+ON public.scrape_cache (expires_at);
+
+-- ============================================================
+-- TABLE: admin_logs
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.admin_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  opportunity_id UUID,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_logs_admin
+ON public.admin_logs (admin_id);
+
+CREATE INDEX IF NOT EXISTS idx_admin_logs_created
+ON public.admin_logs (created_at DESC);
+
+-- ============================================================
+-- FUNCTION: increment views
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.increment_views(opp_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.opportunities
+  SET views_count = views_count + 1
+  WHERE id = opp_id;
+END;
+$$;
+
+-- ============================================================
+-- FUNCTION: updated_at trigger
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- ============================================================
+-- FUNCTION: fts trigger
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.update_fts_vector()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.fts_vector :=
+    to_tsvector(
+      'english',
+      coalesce(NEW.company,'') || ' ' ||
+      coalesce(NEW.role,'') || ' ' ||
+      coalesce(NEW.location,'') || ' ' ||
+      coalesce(NEW.salary,'') || ' ' ||
+      coalesce(array_to_string(NEW.skills, ' '),'') || ' ' ||
+      coalesce(array_to_string(NEW.tags, ' '),'')
+    );
+
+  RETURN NEW;
+END;
+$$;
+
+-- ============================================================
+-- TRIGGERS
+-- ============================================================
+
+DROP TRIGGER IF EXISTS trg_opportunities_updated_at ON public.opportunities;
+DROP TRIGGER IF EXISTS trg_opportunities_fts ON public.opportunities;
+
+CREATE TRIGGER trg_opportunities_updated_at
+BEFORE UPDATE ON public.opportunities
+FOR EACH ROW
+EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER trg_opportunities_fts
+BEFORE INSERT OR UPDATE ON public.opportunities
+FOR EACH ROW
+EXECUTE FUNCTION public.update_fts_vector();
+
+-- ============================================================
+-- FUNCTION: expire past deadlines
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.expire_past_deadline()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.opportunities
+  SET is_expired = true
+  WHERE deadline < now()
+    AND is_expired = false;
+END;
+$$;
+create table if not exists colleges (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text unique not null,
+  city text,
+  state text,
+  logo_url text,
+  website_url text,
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+
+create table if not exists content_modules (
+  id uuid primary key default gen_random_uuid(),
+  key text unique not null,
+  name text not null,
+  description text,
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+
+alter table opportunities
+add column if not exists college_id uuid references colleges(id) on delete set null,
+add column if not exists module_key text default 'placement',
+add column if not exists source_college_name text,
+add column if not exists notice_posted_at timestamptz,
+add column if not exists retention_days integer default 30,
+add column if not exists archived_at timestamptz,
+add column if not exists registration_link text,
+add column if not exists jd_link text,
+add column if not exists company_website text,
+add column if not exists company_logo text,
+add column if not exists interview_mode text,
+add column if not exists venue text,
+add column if not exists joining_date text,
+add column if not exists gender_eligibility text,
+add column if not exists education_qualification text,
+add column if not exists streams_specialization text;
+
+create table if not exists eligibility_candidates (
+  id uuid primary key default gen_random_uuid(),
+  opportunity_id uuid not null references opportunities(id) on delete cascade,
+  college_id uuid references colleges(id) on delete cascade,
+  student_name text,
+  father_name text,
+  university_roll_no text,
+  course text,
+  branch text,
+  batch text,
+  backlogs text,
+  eligible boolean default true,
+  raw_row jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_eligibility_roll
+on eligibility_candidates(university_roll_no);
+
+create table if not exists student_profiles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid unique not null,
+  college_id uuid references colleges(id) on delete set null,
+  full_name text,
+  father_name text,
+  university_roll_no text,
+  branch text,
+  batch text,
+  cgpa text,
+  backlogs text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+insert into content_modules (key, name, description)
+values
+('placement','Placements','Campus placement opportunities'),
+('internship','Internships','Internship opportunities'),
+('academic_notice','Academic Notices','College academic notices'),
+('exam_notice','Exam Notices','Exam related notices'),
+('results','Results','Exam results'),
+('important_links','Important Links','ERP, fee, exam portals'),
+('faculty','Faculty Directory','Faculty contacts'),
+('timetable','Timetable','Class schedule')
+on conflict (key) do nothing;
+-- ============================================================
+-- Campus Opportunity Hub — Row Level Security Policies
+-- Run AFTER schema.sql in Supabase SQL Editor
+-- ============================================================
+
+-- Enable RLS on all tables
+ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scrape_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_logs ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- opportunities: Public can read published, non-expired rows
+-- ============================================================
+DROP POLICY IF EXISTS "Public read published opportunities" ON public.opportunities;
+CREATE POLICY "Public read published opportunities"
+  ON public.opportunities
+  FOR SELECT
+  USING (is_published = true AND is_expired = false);
+
+-- Authenticated admins can read all (including drafts)
+DROP POLICY IF EXISTS "Admins read all opportunities" ON public.opportunities;
+CREATE POLICY "Admins read all opportunities"
+  ON public.opportunities
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Authenticated admins can insert
+DROP POLICY IF EXISTS "Admins insert opportunities" ON public.opportunities;
+CREATE POLICY "Admins insert opportunities"
+  ON public.opportunities
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Authenticated admins can update
+DROP POLICY IF EXISTS "Admins update opportunities" ON public.opportunities;
+CREATE POLICY "Admins update opportunities"
+  ON public.opportunities
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Authenticated admins can delete
+DROP POLICY IF EXISTS "Admins delete opportunities" ON public.opportunities;
+CREATE POLICY "Admins delete opportunities"
+  ON public.opportunities
+  FOR DELETE
+  TO authenticated
+  USING (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- scrape_cache: Service role only
+-- ============================================================
+DROP POLICY IF EXISTS "Service role scrape cache" ON public.scrape_cache;
+CREATE POLICY "Service role scrape cache"
+  ON public.scrape_cache
+  USING (auth.role() = 'service_role');
+
+-- ============================================================
+-- admin_logs: Authenticated admins only
+-- ============================================================
+DROP POLICY IF EXISTS "Admins read logs" ON public.admin_logs;
+CREATE POLICY "Admins read logs"
+  ON public.admin_logs
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins insert logs" ON public.admin_logs;
+CREATE POLICY "Admins insert logs"
+  ON public.admin_logs
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- increment_views: Allow anon calls via RPC
+-- ============================================================
+GRANT EXECUTE ON FUNCTION public.increment_views(UUID) TO anon, authenticated;
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
+
+export async function POST(request: NextRequest) {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  const body = await request.json();
+
+  const {
+    title,
+    content,
+    contributionType,
+    sourceLink,
+  } = body;
+
+  if (!title || !contributionType || !content) {
+    return NextResponse.json(
+      { error: 'Title, type and details required' },
+      { status: 400 }
+    );
+  }
+
+  const service = createServiceClient();
+
+  const { data: profile } = await service
+    .from('profiles')
+    .select('full_name,email')
+    .eq('id', user.id)
+    .single();
+
+  const { data: studentProfile } = await service
+    .from('student_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const { error } = await service
+    .from('student_contributions')
+    .insert({
+      user_id: user.id,
+      contributor_name:
+        profile?.full_name || 'Student',
+      contributor_email:
+        profile?.email || user.email,
+      college_id:
+        studentProfile?.college_id || null,
+      contribution_type: contributionType,
+      title,
+      content,
+      source_link: sourceLink || null,
+      status: 'pending',
+      points_awarded: 0,
+    });
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+  const { data: existing } = await service
+    .from('student_points')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existing) {
+    await service
+      .from('student_points')
+      .insert({
+        user_id: user.id,
+        total_points: 0,
+        approved_contributions: 0,
+        opportunities_submitted: 1,
+      });
+  } else {
+    await service
+      .from('student_points')
+      .update({
+        opportunities_submitted:
+          (existing.opportunities_submitted || 0) + 1,
+      })
+      .eq('user_id', user.id);
+  }
+
+  return NextResponse.json({
+    success: true,
+  });
+}
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
+
+function isAdmin(email?: string | null) {
+  return (process.env.ADMIN_EMAIL_WHITELIST || '')
+    .split(',')
+    .map((e) => e.trim())
+    .includes(email || '');
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAdmin(user.email)) {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    );
+  }
+
+  const { contributionId } = await request.json();
+
+  const service = createServiceClient();
+
+  const { data: contribution } = await service
+    .from('student_contributions')
+    .select('*')
+    .eq('id', contributionId)
+    .maybeSingle();
+
+  if (!contribution || contribution.status !== 'pending') {
+    return NextResponse.json(
+      { error: 'Already processed or not found' },
+      { status: 400 }
+    );
+  }
+
+  await service
+    .from('student_contributions')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+      points_awarded: 25,
+    })
+    .eq('id', contributionId);
+
+  const { data: existing } = await service
+    .from('student_points')
+    .select('*')
+    .eq('user_id', contribution.user_id)
+    .maybeSingle();
+
+  if (existing) {
+    await service
+      .from('student_points')
+      .update({
+        total_points:
+          (existing.total_points || 0) + 25,
+        approved_contributions:
+          (existing.approved_contributions || 0) + 1,
+      })
+      .eq('user_id', contribution.user_id);
+  }
+
+  return NextResponse.json({
+    success: true,
+  });
+}
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
+
+function isAdmin(email?: string | null) {
+  return (process.env.ADMIN_EMAIL_WHITELIST || '')
+    .split(',')
+    .map((e) => e.trim())
+    .includes(email || '');
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAdmin(user.email)) {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    );
+  }
+
+  const { contributionId } = await request.json();
+
+  const service = createServiceClient();
+
+  await service
+    .from('student_contributions')
+    .update({
+      status: 'rejected',
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', contributionId)
+    .eq('status', 'pending');
+
+  return NextResponse.json({
+    success: true,
+  });
+}
+import { createServiceClient } from '@/lib/supabase/server';
+import Link from 'next/link';
+import {
+  Trophy,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+} from 'lucide-react';
+import { AdminControlCenter } from '@/components/admin/AdminControlCenter';
+
+async function getDashboardData() {
+  const supabase = createServiceClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  const [
+    pending,
+    approved,
+    rejected,
+    topPoints,
+  ] = await Promise.all([
+    supabase
+      .from('student_contributions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending'),
+
+    supabase
+      .from('student_contributions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved')
+      .gte('reviewed_at', `${today}T00:00:00`),
+
+    supabase
+      .from('student_contributions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'rejected')
+      .gte('reviewed_at', `${today}T00:00:00`),
+
+    supabase
+      .from('student_points')
+      .select('*')
+      .order('total_points', {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  let topName = 'No contributor yet';
+
+  if (topPoints.data?.user_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name,email')
+      .eq('id', topPoints.data.user_id)
+      .maybeSingle();
+
+    topName =
+      profile?.full_name ||
+      profile?.email ||
+      'Student';
+  }
+
+  return {
+    pending: pending.count || 0,
+    approved: approved.count || 0,
+    rejected: rejected.count || 0,
+    topPoints:
+      topPoints.data?.total_points || 0,
+    topName,
+  };
+}
+
+export default async function AdminDashboardPage() {
+  const stats = await getDashboardData();
+
+  return (
+    <div className="max-w-7xl mx-auto p-8 space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">
+          Admin Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Moderation + analytics overview
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-5">
+        <Link href="/admin/contributions" className="border rounded-2xl p-6 bg-card">
+          <MessageSquare className="w-6 h-6 text-primary mb-3" />
+          <p className="text-sm text-muted-foreground">Pending</p>
+          <p className="text-3xl font-bold">{stats.pending}</p>
+        </Link>
+
+        <div className="border rounded-2xl p-6 bg-card">
+          <CheckCircle className="w-6 h-6 text-green-600 mb-3" />
+          <p className="text-sm text-muted-foreground">Approved Today</p>
+          <p className="text-3xl font-bold">{stats.approved}</p>
+        </div>
+
+        <div className="border rounded-2xl p-6 bg-card">
+          <XCircle className="w-6 h-6 text-red-600 mb-3" />
+          <p className="text-sm text-muted-foreground">Rejected Today</p>
+          <p className="text-3xl font-bold">{stats.rejected}</p>
+        </div>
+
+        <Link href="/leaderboard" className="border rounded-2xl p-6 bg-card">
+          <Trophy className="w-6 h-6 text-yellow-500 mb-3" />
+          <p className="text-sm text-muted-foreground">Top Contributor</p>
+          <p className="font-bold">{stats.topName}</p>
+          <p>{stats.topPoints} pts</p>
+        </Link>
+      </div>
+
+      <AdminControlCenter />
+    </div>
+  );
+}
+import { createServiceClient } from '@/lib/supabase/server';
+import { ContributionActions } from './ContributionActions';
+
+export default async function ContributionsPage() {
+  const supabase = createServiceClient();
+
+  const { data } = await supabase
+    .from('student_contributions')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', {
+      ascending: false,
+    });
+
+  return (
+    <div className="max-w-7xl mx-auto p-8 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">
+          Contribution Review Queue
+        </h1>
+
+        <p className="text-muted-foreground mt-2">
+          Review student submissions before approval.
+        </p>
+      </div>
+
+      {!data?.length && (
+        <div className="border rounded-2xl p-10 text-center">
+          No pending contributions.
+        </div>
+      )}
+
+      {data?.map((item) => (
+        <div
+          key={item.id}
+          className="border rounded-2xl p-6 bg-card space-y-5"
+        >
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Student Name
+              </p>
+              <p className="font-semibold">
+                {item.contributor_name || 'Unknown'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Email
+              </p>
+              <p className="font-medium break-all">
+                {item.contributor_email || 'N/A'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Type
+              </p>
+              <p className="capitalize">
+                {item.contribution_type}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold">
+              {item.title}
+            </h2>
+
+            <p className="text-sm text-muted-foreground mt-2">
+              Submitted:
+              {' '}
+              {new Date(
+                item.created_at
+              ).toLocaleString()}
+            </p>
+          </div>
+
+          <div className="border rounded-xl p-4 bg-muted/30">
+            <p className="whitespace-pre-wrap">
+              {item.content}
+            </p>
+          </div>
+
+          {item.source_link && (
+            <a
+              href={item.source_link}
+              target="_blank"
+              className="text-primary font-medium"
+            >
+              View Source Link
+            </a>
+          )}
+
+          <ContributionActions id={item.id} />
+        </div>
+      ))}
+    </div>
+  );
+}

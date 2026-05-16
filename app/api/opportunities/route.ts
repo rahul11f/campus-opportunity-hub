@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { OpportunityCreateSchema, SearchQuerySchema } from '@/lib/validators';
-import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
+import {
+  OpportunityCreateSchema,
+  SearchQuerySchema,
+} from '@/lib/validators';
+import {
+  checkRateLimit,
+  rateLimitResponse,
+} from '@/lib/rateLimit';
 
 function isAdmin(email?: string | null) {
-  const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '')
+  const adminEmails = (
+    process.env.ADMIN_EMAIL_WHITELIST || ''
+  )
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
@@ -18,14 +29,38 @@ function sanitizeSearchTerm(term: string) {
   return term.replace(/[,%()]/g, '').trim();
 }
 
+function normalizeText(value?: string | null) {
+  if (!value) return '';
+
+  return value
+    .toLowerCase()
+    .replace(
+      /\b(private|pvt|limited|ltd|inc|corporation|corp|technologies|technology|solutions|services)\b/g,
+      ''
+    )
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isSimilar(a: string, b: string) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return a.includes(b) || b.includes(a);
+}
+
 export async function GET(request: NextRequest) {
-  const rl = await checkRateLimit(request, 'opportunities');
+  const rl = await checkRateLimit(
+    request,
+    'opportunities'
+  );
 
   if (!rl.success) {
     return rateLimitResponse(rl.reset);
   }
 
   const { searchParams } = new URL(request.url);
+
   const parsed = SearchQuerySchema.safeParse(
     Object.fromEntries(searchParams)
   );
@@ -37,19 +72,41 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { q, type, sort, page, limit } = parsed.data;
-  const offset = (page - 1) * limit;
+  const {
+    q,
+    type,
+    sort,
+    page,
+    limit,
+  } = parsed.data;
 
+  const offset = (page - 1) * limit;
   const supabase = createClient();
 
   let query = supabase
     .from('opportunities')
-    .select('*', { count: 'exact' })
+    .select(
+      `
+      id,
+      company,
+      role,
+      type,
+      salary,
+      location,
+      featured,
+      deadline,
+      views_count
+      `,
+      { count: 'exact' }
+    )
     .eq('is_published', true)
     .eq('is_expired', false);
 
   if (q) {
-    const safeQ = sanitizeSearchTerm(q);
+    const safeQ = sanitizeSearchTerm(q).slice(
+      0,
+      80
+    );
 
     if (safeQ) {
       query = query.or(
@@ -69,10 +126,16 @@ export async function GET(request: NextRequest) {
     });
   } else if (sort === 'featured') {
     query = query
-      .order('featured', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('featured', {
+        ascending: false,
+      })
+      .order('created_at', {
+        ascending: false,
+      });
   } else {
-    query = query.order('created_at', { ascending: false });
+    query = query.order('created_at', {
+      ascending: false,
+    });
   }
 
   const { data, count } = await query.range(
@@ -85,7 +148,9 @@ export async function GET(request: NextRequest) {
     total: count || 0,
     page,
     limit,
-    totalPages: Math.ceil((count || 0) / limit),
+    totalPages: Math.ceil(
+      (count || 0) / limit
+    ),
   });
 }
 
@@ -121,7 +186,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = OpportunityCreateSchema.safeParse(body);
+  const parsed =
+    OpportunityCreateSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -132,13 +198,70 @@ export async function POST(request: NextRequest) {
 
   const serviceClient = createServiceClient();
 
+  const normalizedCompany = normalizeText(
+    parsed.data.company
+  );
+
+  const normalizedRole = normalizeText(
+    parsed.data.role
+  );
+
+  const { data: recentListings } =
+    await serviceClient
+      .from('opportunities')
+      .select(
+        'id, company, role, created_at'
+      )
+      .order('created_at', {
+        ascending: false,
+      })
+      .limit(100);
+
+  const duplicate = recentListings?.find(
+    (item) => {
+      const dbCompany = normalizeText(
+        item.company
+      );
+
+      const dbRole = normalizeText(
+        item.role
+      );
+
+      return (
+        isSimilar(
+          normalizedCompany,
+          dbCompany
+        ) &&
+        isSimilar(
+          normalizedRole,
+          dbRole
+        )
+      );
+    }
+  );
+
+  if (duplicate) {
+    return NextResponse.json(
+      {
+        error:
+          'Duplicate listing detected. Similar opportunity already exists.',
+        duplicateId: duplicate.id,
+      },
+      {
+        status: 409,
+      }
+    );
+  }
+
   const { data } = await serviceClient
     .from('opportunities')
     .insert({
       ...parsed.data,
       created_by: user.id,
-      apply_link: parsed.data.apply_link || null,
-      source_link: parsed.data.source_link || null,
+      apply_link:
+        parsed.data.apply_link || null,
+      source_link:
+        parsed.data.source_link || null,
     })
     .select()
     .single();
@@ -150,16 +273,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await serviceClient.from('admin_logs').insert({
-    admin_id: user.id,
-    action: `Created opportunity: ${parsed.data.role} at ${parsed.data.company}`,
-    opportunity_id: data.id,
-    metadata: {
-      type: parsed.data.type,
-      is_published: parsed.data.is_published,
-    },
+  await serviceClient
+    .from('admin_logs')
+    .insert({
+      admin_id: user.id,
+      action: `Created opportunity: ${parsed.data.role} at ${parsed.data.company}`,
+      opportunity_id: data.id,
+      metadata: {
+        type: parsed.data.type,
+        is_published:
+          parsed.data.is_published,
+      },
+    });
+
+  return NextResponse.json(data, {
+    status: 201,
   });
-
-  return NextResponse.json(data, { status: 201 });
 }
-

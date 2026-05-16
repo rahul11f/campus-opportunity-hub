@@ -13,6 +13,7 @@ import {
 import { extractTextFromImageUrl } from '@/lib/pipeline/ocrExtractor';
 import { classifyUrl as classifyContent } from '@/lib/pipeline/contentClassifier';
 import { cleanText, truncateText } from '@/lib/pipeline/textCleaner';
+import { cleanOcrText } from '@/lib/pipeline/ocrTextCleaner';
 import { extractWithGemini } from '@/lib/pipeline/geminiExtractor';
 import { DetectedUrl } from '@/types/opportunity';
 
@@ -22,6 +23,8 @@ type FetchResult = {
   content: string;
   loginRequired: boolean;
 };
+
+import { fallbackExtract } from '@/lib/pipeline/fallbackExtractor';
 
 function isAdmin(email?: string | null) {
   const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '')
@@ -173,7 +176,8 @@ export async function POST(request: NextRequest) {
 
   const { rawText } = parsed.data;
 
-  const cleanedRawResult = cleanText(rawText);
+  const ocrPreparedText = cleanOcrText(rawText);
+  const cleanedRawResult = cleanText(ocrPreparedText);
   const cleanedRawText = cleanedRawResult.cleaned;
 
   const detectedUrls: DetectedUrl[] = detectUrls(rawText);
@@ -230,6 +234,11 @@ export async function POST(request: NextRequest) {
   let extracted = null;
   let extractionError = null;
 
+  const sourceLink =
+    detectedUrls.find((u) => u.resolvedUrl)?.resolvedUrl ||
+    detectedUrls.find((u) => u.originalUrl)?.originalUrl ||
+    null;
+
   try {
     const result = await extractWithGemini(
       truncateText(cleanedRawText, 8000),
@@ -242,6 +251,11 @@ export async function POST(request: NextRequest) {
       err instanceof Error
         ? err.message
         : 'AI extraction failed';
+
+    extracted = fallbackExtract(
+      cleanedRawText,
+      sourceLink
+    );
   }
 
   return NextResponse.json({
@@ -271,3 +285,4 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const OpportunityTypeSchema = z.enum([
   'placement',
@@ -52,8 +52,8 @@ export const OpportunityCreateSchema = z.object({
   responsibilities: z.array(z.string()).nullable().optional(),
   interview_process: InterviewProcessSchema.nullable().optional(),
   instructions: z.string().nullable().optional(),
-  apply_link: z.string().url('Must be a valid URL').nullable().optional().or(z.literal('')),
-  source_link: z.string().url('Must be a valid URL').nullable().optional().or(z.literal('')),
+  apply_link: z.string().nullable().optional(),
+  source_link: z.string().nullable().optional(),
   raw_text: z.string().nullable().optional(),
   deadline: z.string().nullable().optional(),
   featured: z.boolean().default(false),
@@ -85,3 +85,4 @@ export type ProcessNoticeInput = z.infer<typeof ProcessNoticeSchema>;
 export type SearchQuery = z.infer<typeof SearchQuerySchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type ExtractedOpportunityData = z.infer<typeof ExtractedOpportunitySchema>;
+

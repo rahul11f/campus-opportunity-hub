@@ -1,9 +1,18 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Trash2, MoreHorizontal } from 'lucide-react';
+import {
+  Trash2,
+  Star,
+  StarOff,
+  Clock3,
+  Pencil,
+  Rocket,
+  Ban,
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface ListingsActionsProps {
   id: string;
@@ -12,81 +21,162 @@ interface ListingsActionsProps {
   isExpired: boolean;
 }
 
-export function ListingsActions({ id, isPublished, isFeatured, isExpired }: ListingsActionsProps) {
+export function ListingsActions({
+  id,
+  isPublished,
+  isFeatured,
+  isExpired,
+}: ListingsActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const patch = async (body: Record<string, unknown>, label: string) => {
+  const patch = async (
+    body: Record<string, unknown>,
+    label: string
+  ) => {
     setLoading(true);
+
     try {
       const res = await fetch(`/api/opportunities/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('Update failed');
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Update failed');
+      }
+
       toast.success(label);
       router.refresh();
-    } catch {
-      toast.error('Action failed. Please try again.');
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Action failed'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) return;
+  const remove = async () => {
+    if (!confirm('Delete permanently?')) return;
+
     setLoading(true);
+
     try {
-      const res = await fetch(`/api/opportunities/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      toast.success('Listing deleted.');
+      const res = await fetch(`/api/opportunities/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Delete failed');
+      }
+
+      toast.success('Deleted');
       router.refresh();
     } catch {
-      toast.error('Delete failed.');
+      toast.error('Delete failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => patch({ is_published: !isPublished }, isPublished ? 'Unpublished' : 'Published')}
-        disabled={loading}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+    <div className="flex flex-wrap gap-2">
+      <Link
+        href={`/admin/edit-listing/${id}`}
+        className="px-3 py-2 rounded-xl border text-sm flex items-center gap-2"
       >
-        {isPublished ? 'Unpublish' : 'Publish'}
-      </button>
-      <span className="text-muted-foreground/30">Â·</span>
-      <button
-        onClick={() => patch({ featured: !isFeatured }, isFeatured ? 'Unfeatured' : 'Featured!')}
-        disabled={loading}
-        className="text-xs text-muted-foreground hover:text-amber-500 transition-colors disabled:opacity-50"
-      >
-        {isFeatured ? 'â˜…' : 'â˜†'}
-      </button>
-      <span className="text-muted-foreground/30">Â·</span>
-      {!isExpired && (
-        <>
-          <button
-            onClick={() => patch({ is_expired: true }, 'Marked as expired')}
-            disabled={loading}
-            className="text-xs text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
-          >
-            Expire
-          </button>
-          <span className="text-muted-foreground/30">Â·</span>
-        </>
+        <Pencil className="w-4 h-4" />
+        Edit
+      </Link>
+
+      {!isPublished ? (
+        <button
+          disabled={loading}
+          onClick={() =>
+            patch(
+              {
+                is_published: true,
+                is_expired: false,
+              },
+              'Published'
+            )
+          }
+          className="px-3 py-2 rounded-xl bg-green-600 text-white text-sm flex items-center gap-2"
+        >
+          <Rocket className="w-4 h-4" />
+          Publish
+        </button>
+      ) : (
+        <button
+          disabled={loading}
+          onClick={() =>
+            patch(
+              {
+                is_published: false,
+              },
+              'Unpublished'
+            )
+          }
+          className="px-3 py-2 rounded-xl bg-yellow-600 text-white text-sm flex items-center gap-2"
+        >
+          <Ban className="w-4 h-4" />
+          Unpublish
+        </button>
       )}
+
+      {!isExpired && (
+        <button
+          disabled={loading}
+          onClick={() =>
+            patch(
+              {
+                is_expired: true,
+                is_published: false,
+              },
+              'Expired'
+            )
+          }
+          className="px-3 py-2 rounded-xl border text-sm flex items-center gap-2"
+        >
+          <Clock3 className="w-4 h-4" />
+          Expire
+        </button>
+      )}
+
       <button
-        onClick={handleDelete}
         disabled={loading}
-        className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+        onClick={() =>
+          patch(
+            {
+              featured: !isFeatured,
+            },
+            isFeatured
+              ? 'Unfeatured'
+              : 'Featured'
+          )
+        }
+        className="px-3 py-2 rounded-xl border text-sm"
       >
-        <Trash2 className="w-3 h-3" />
+        {isFeatured ? (
+          <StarOff className="w-4 h-4" />
+        ) : (
+          <Star className="w-4 h-4" />
+        )}
+      </button>
+
+      <button
+        disabled={loading}
+        onClick={remove}
+        className="px-3 py-2 rounded-xl bg-red-600 text-white"
+      >
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );
 }
-

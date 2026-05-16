@@ -84,6 +84,8 @@ export function PasteWorkflow() {
   const [processing, setProcessing] = useState(false);
   const [extractedData, setExtractedData] =
     useState<ExtractedOpportunity | null>(null);
+  const [fallbackDraft, setFallbackDraft] =
+    useState<Partial<ExtractedOpportunity> | null>(null);
   const [detectedUrls, setDetectedUrls] =
     useState<DetectedUrl[]>([]);
   const [cleanedText, setCleanedText] =
@@ -107,6 +109,7 @@ export function PasteWorkflow() {
     setProcessing(true);
     setExtractionError(null);
     setExtractedData(null);
+    setFallbackDraft(null);
     setDetectedUrls([]);
     setDiagnostics(undefined);
 
@@ -132,12 +135,26 @@ export function PasteWorkflow() {
       }
 
       setDetectedUrls(data.detectedUrls || []);
-      setExtractedData(data.extracted);
-      setExtractionError(
-        data.extractionError
-      );
+      setExtractionError(data.extractionError);
       setCleanedText(data.cleanedText);
       setDiagnostics(data.diagnostics);
+
+      if (data.extracted) {
+        setExtractedData(data.extracted);
+        setFallbackDraft(null);
+      } else {
+        const fallback: Partial<ExtractedOpportunity> = {
+          company: 'Manual Review Required',
+          role: 'Opportunity Listing',
+          type: 'placement',
+          instructions: data.cleanedText || rawText,
+          apply_link:
+            getBestSourceLink(data.detectedUrls || []) || '',
+        };
+
+        setExtractedData(null);
+        setFallbackDraft(fallback);
+      }
 
       if (data.extracted) {
         toast.success(
@@ -161,6 +178,9 @@ export function PasteWorkflow() {
 
   const sourceLink =
     getBestSourceLink(detectedUrls);
+
+  const reviewData =
+    extractedData || fallbackDraft;
 
   return (
     <div className="space-y-6">
@@ -278,7 +298,7 @@ export function PasteWorkflow() {
                 Extraction issue
               </h3>
               <p className="text-sm text-red-600 mt-1">
-                {extractionError}
+                AI extraction unavailable. Manual draft prepared for review.
               </p>
 
               <button
@@ -294,7 +314,7 @@ export function PasteWorkflow() {
         </div>
       )}
 
-      {extractedData && (
+      {reviewData && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -305,12 +325,12 @@ export function PasteWorkflow() {
 
           <ConfidenceBanner
             confidence={
-              extractedData.confidence_score
+              reviewData?.confidence_score ?? 0
             }
           />
 
           <OpportunityForm
-            initialData={extractedData}
+            initialData={reviewData}
             rawText={cleanedText || rawText}
             sourceLink={sourceLink}
           />
@@ -358,3 +378,4 @@ function Badge({
     </span>
   );
 }
+

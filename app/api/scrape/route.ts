@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { scrapeWithCheerio } from '@/lib/pipeline/webScraper';
 import { z } from 'zod';
+import { getFeatureFlags, getUsageLimits } from '@/lib/settings';
+import { getTodayUsageCount, logUsage } from '@/lib/usage';
 
 const ScrapeSchema = z.object({
   url: z.string().url(),
@@ -46,6 +48,25 @@ export async function POST(request: NextRequest) {
     return rateLimitResponse(rl.reset);
   }
 
+  const flags = await getFeatureFlags();
+  const limits = await getUsageLimits();
+
+  if (!flags.scraper_enabled) {
+    return NextResponse.json(
+      { error: 'Scraper disabled by admin' },
+      { status: 403 }
+    );
+  }
+
+  const todayUsage = await getTodayUsageCount('scraper');
+
+  if (todayUsage >= limits.scrape_daily_limit) {
+    return NextResponse.json(
+      { error: 'Daily scraper quota reached' },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
 
   try {
@@ -69,15 +90,18 @@ export async function POST(request: NextRequest) {
   try {
     const { text, title } = await scrapeWithCheerio(parsed.data.url);
 
+    await logUsage('scraper', 'scrape', true);
+
     return NextResponse.json({
       text,
       title,
     });
   } catch {
+    await logUsage('scraper', 'scrape', false);
+
     return NextResponse.json(
       { error: 'Scraping failed' },
       { status: 500 }
     );
   }
 }
-

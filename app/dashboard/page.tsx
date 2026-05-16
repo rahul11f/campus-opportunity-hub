@@ -1,6 +1,34 @@
-import Link from 'next/link';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import {
+  Trophy,
+  Clock3,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+
+async function getDashboardData(userId: string) {
+  const supabase = createServiceClient();
+
+  const [contribs, points] =
+    await Promise.all([
+      supabase
+        .from('student_contributions')
+        .select('*')
+        .eq('user_id', userId),
+
+      supabase
+        .from('student_points')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle(),
+    ]);
+
+  return {
+    contributions: contribs.data || [],
+    points: points.data,
+  };
+}
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -13,115 +41,53 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, email, role')
-    .eq('id', user.id)
-    .single();
+  const data = await getDashboardData(user.id);
 
-  if (profile?.role === 'admin') {
-    redirect('/admin/dashboard');
-  }
+  const pending = data.contributions.filter(
+    (x) => x.status === 'pending'
+  ).length;
 
-  const { count: savedCount } = await supabase
-    .from('saved_opportunities')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id);
+  const approved = data.contributions.filter(
+    (x) => x.status === 'approved'
+  ).length;
 
-  const { count: applicationCount } = await supabase
-    .from('applications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id);
+  const rejected = data.contributions.filter(
+    (x) => x.status === 'rejected'
+  ).length;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="bg-card border border-border rounded-2xl p-8">
-          <h1 className="text-3xl font-bold mb-2">
-            Student Dashboard
-          </h1>
-
-          <p className="text-muted-foreground">
-            Welcome back, {profile?.full_name || user.email}
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-5">
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold mb-2">
-              Saved Opportunities
-            </h2>
-            <p className="text-3xl font-bold mb-3">
-              {savedCount || 0}
-            </p>
-            <Link
-              href="/dashboard/saved"
-              className="text-sm text-primary hover:underline"
-            >
-              View saved opportunities
-            </Link>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold mb-2">
-              Applications
-            </h2>
-            <p className="text-3xl font-bold mb-3">
-              {applicationCount || 0}
-            </p>
-            <Link
-              href="/dashboard/applications"
-              className="text-sm text-primary hover:underline"
-            >
-              View tracked applications
-            </Link>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold mb-2">
-              Profile
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Manage your student profile and preferences
-            </p>
-            <Link
-              href="/dashboard/profile"
-              className="text-sm text-primary hover:underline"
-            >
-              Open profile
-            </Link>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-8">
-          <h2 className="text-xl font-semibold mb-4">
-            Quick Actions
-          </h2>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/search"
-              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
-            >
-              Browse Opportunities
-            </Link>
-
-            <Link
-              href="/dashboard/saved"
-              className="px-4 py-2 rounded-xl border border-border text-sm font-medium"
-            >
-              Saved
-            </Link>
-
-            <Link
-              href="/dashboard/applications"
-              className="px-4 py-2 rounded-xl border border-border text-sm font-medium"
-            >
-              Applications
-            </Link>
-          </div>
-        </div>
+    <div className="p-8 space-y-8">
+      <div>
+        <h1 className="text-5xl font-bold">
+          Student Dashboard
+        </h1>
       </div>
+
+      <div className="grid md:grid-cols-4 gap-6">
+        <Card icon={<Trophy />} title="Points" value={data.points?.total_points || 0} />
+        <Card icon={<Clock3 />} title="Pending" value={pending} />
+        <Card icon={<CheckCircle2 />} title="Approved" value={approved} />
+        <Card icon={<XCircle />} title="Rejected" value={rejected} />
+      </div>
+    </div>
+  );
+}
+
+function Card({
+  icon,
+  title,
+  value,
+}: any) {
+  return (
+    <div className="rounded-3xl border bg-card p-8">
+      <div className="mb-4">
+        {icon}
+      </div>
+
+      <p>{title}</p>
+      <p className="text-4xl font-bold">
+        {value}
+      </p>
     </div>
   );
 }

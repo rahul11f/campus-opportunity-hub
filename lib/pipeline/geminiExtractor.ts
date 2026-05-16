@@ -1,28 +1,99 @@
+﻿import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   ExtractedOpportunitySchema,
   type ExtractedOpportunityData,
 } from '@/lib/validators';
 
 const SYSTEM_PROMPT = `
-You extract structured campus opportunity data from messy Indian recruitment notices.
+You are an expert extractor for Indian campus placement notices, internship notices, hiring posters, opportunity circulars, scanned PDFs, and OCR text.
 
-Rules:
-- Extract ONLY factual information present in provided text.
-- Never hallucinate.
-- Missing or unclear fields must be null.
-- Return ONLY valid JSON.
+STRICT RULES:
+- OCR may be noisy, duplicated, malformed, or partially corrupted.
+- NEVER hallucinate missing facts.
+- Infer only from visible evidence.
+- If uncertain, return null.
+- Prefer exact extracted values.
+- Output VALID JSON ONLY.
 - No markdown.
 - No explanation.
 `;
 
-function buildPrompt(rawText: string, fetchedContent: string) {
+function buildPrompt(
+  rawText: string,
+  fetchedContent: string
+) {
   return `
+Extract structured opportunity data.
+
+IMPORTANT EXTRACTION TARGETS:
+
+COMPANY:
+- recruiter/company name
+- normalize obvious OCR corruption
+
+ROLE:
+- exact job role / internship title
+
+TYPE:
+Must be one of:
+placement
+internship
+hackathon
+scholarship
+campus_drive
+fellowship
+competition
+other
+
+SALARY:
+Extract:
+- CTC
+- stipend
+- compensation
+- package
+
+LOCATION:
+City / work location if visible
+
+ELIGIBILITY:
+Extract:
+- branches
+- CGPA
+- backlog rules
+- eligible batch
+- other criteria
+
+INTERVIEW:
+Extract:
+- rounds count
+- round names
+
+LINKS:
+Extract actual apply link if visible
+
+DATES:
+Extract exact deadline if visible
+
+SKILLS:
+Extract technologies / required skills
+
+INSTRUCTIONS:
+Summarize actionable instructions only
+
+CONFIDENCE:
+0.0 to 1.0
+Higher only if evidence is strong.
+
 RAW NOTICE:
 ${rawText}
 
-${fetchedContent ? `FETCHED CONTENT:\n${fetchedContent}` : ''}
+${
+  fetchedContent
+    ? `FETCHED CONTENT:\n${fetchedContent}`
+    : ''
+}
 
-Return EXACT JSON:
+RETURN EXACT JSON:
 
 {
   "company": string | null,
@@ -49,82 +120,12 @@ Return EXACT JSON:
   "tags": string[] | null,
   "confidence_score": number
 }
-
-Rules:
-- salary preserve formatting
-- deadline ISO if confidently known
-- confidence_score must be 0 to 1
 `;
 }
 
-async function geminiRequest(
-  apiKey: string,
-  prompt: string,
-  strict = false,
-  model = 'gemini-1.5-pro'
-): Promise<string> {
-  const controller = new AbortController();
-
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, 45000);
-
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: strict
-                  ? SYSTEM_PROMPT + '\nSTRICT JSON ONLY.'
-                  : SYSTEM_PROMPT,
-              },
-            ],
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: strict ? 0 : 0.1,
-            topK: 20,
-            topP: 0.9,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API ${response.status}: ${err}`);
-    }
-
-    const json = await response.json();
-
-    const text =
-      json?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text || typeof text !== 'string') {
-      throw new Error('Empty Gemini response');
-    }
-
-    return text;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function parseJsonResponse(text: string): unknown {
+function parseJsonResponse(
+  text: string
+): unknown {
   let cleaned = text.trim();
 
   cleaned = cleaned
@@ -145,24 +146,6 @@ function parseJsonResponse(text: string): unknown {
   return JSON.parse(cleaned);
 }
 
-function normalizeConfidence(data: ExtractedOpportunityData) {
-  if (
-    typeof data.confidence_score !== 'number' ||
-    Number.isNaN(data.confidence_score)
-  ) {
-    data.confidence_score = 0.5;
-    return;
-  }
-
-  if (data.confidence_score < 0) {
-    data.confidence_score = 0;
-  }
-
-  if (data.confidence_score > 1) {
-    data.confidence_score = 1;
-  }
-}
-
 export async function extractWithGemini(
   rawText: string,
   fetchedContent = ''
@@ -174,45 +157,50 @@ export async function extractWithGemini(
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured');
+    throw new Error(
+      'GEMINI_API_KEY not configured'
+    );
   }
 
-  const prompt = buildPrompt(rawText, fetchedContent);
+  const genAI = new GoogleGenerativeAI(apiKey);
 
-  const attempts = [
-    {
-      strict: false,
-      model: 'gemini-1.5-pro',
-    },
-    {
-      strict: true,
-      model: 'gemini-1.5-pro',
-    },
-    {
-      strict: true,
-      model: 'gemini-1.5-flash',
-    },
+  const models = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
   ];
+
+  const prompt = buildPrompt(
+    rawText,
+    fetchedContent
+  );
 
   let lastError: unknown = null;
   let rawResponse = '';
 
-  for (let i = 0; i < attempts.length; i++) {
+  for (let i = 0; i < models.length; i++) {
     try {
-      const attempt = attempts[i];
+      const model =
+        genAI.getGenerativeModel({
+          model: models[i],
+          systemInstruction:
+            SYSTEM_PROMPT,
+        });
 
-      rawResponse = await geminiRequest(
-        apiKey,
-        prompt,
-        attempt.strict,
-        attempt.model
-      );
+      const result =
+        await model.generateContent(
+          prompt
+        );
 
-      const parsed = parseJsonResponse(rawResponse);
+      rawResponse =
+        result.response.text();
+
+      const parsed =
+        parseJsonResponse(rawResponse);
+
       const validated =
-        ExtractedOpportunitySchema.parse(parsed);
-
-      normalizeConfidence(validated);
+        ExtractedOpportunitySchema.parse(
+          parsed
+        );
 
       return {
         data: validated,

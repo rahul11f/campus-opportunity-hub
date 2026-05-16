@@ -1,6 +1,13 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
+import {
+  Bookmark,
+  ExternalLink,
+  CheckCircle2,
+  SearchCheck,
+} from 'lucide-react';
 
 interface Props {
   opportunityId: string;
@@ -13,6 +20,7 @@ export function StudentOpportunityActions({
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   async function saveOpportunity() {
     try {
@@ -29,11 +37,15 @@ export function StudentOpportunityActions({
       });
 
       if (!res.ok) {
-        alert('Please login as student first');
+        toast.error(
+          'Please login as student first'
+        );
         return;
       }
 
-      alert('Opportunity saved');
+      toast.success('Opportunity saved');
+    } catch {
+      toast.error('Save failed');
     } finally {
       setSaving(false);
     }
@@ -54,17 +66,59 @@ export function StudentOpportunityActions({
       });
 
       if (!res.ok) {
-        alert('Please login as student first');
+        toast.error(
+          'Please login as student first'
+        );
         return;
       }
+
+      toast.success('Application tracked');
 
       if (applyLink) {
         window.open(applyLink, '_blank');
       }
-
-      alert('Application tracked');
+    } catch {
+      toast.error('Tracking failed');
     } finally {
       setApplying(false);
+    }
+  }
+
+  async function checkEligibility() {
+    try {
+      setChecking(true);
+
+      const res = await fetch(
+        '/api/student/eligibility',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            opportunityId,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.eligible) {
+        toast.success(
+          `Eligible: ${data.candidate?.name || 'Matched'}`
+        );
+      } else {
+        toast.error(
+          data.reason ||
+            'Not eligible / list unavailable'
+        );
+      }
+    } catch {
+      toast.error(
+        'Eligibility check failed'
+      );
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -73,17 +127,34 @@ export function StudentOpportunityActions({
       <button
         onClick={saveOpportunity}
         disabled={saving}
-        className="px-5 py-3 rounded-xl border border-border font-medium hover:bg-accent transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border font-medium hover:bg-accent"
       >
-        {saving ? 'Saving...' : 'Save Opportunity'}
+        <Bookmark className="w-4 h-4" />
+        {saving
+          ? 'Saving...'
+          : 'Save Opportunity'}
+      </button>
+
+      <button
+        onClick={checkEligibility}
+        disabled={checking}
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border font-medium hover:bg-accent"
+      >
+        <SearchCheck className="w-4 h-4" />
+        {checking
+          ? 'Checking...'
+          : 'Check Eligibility'}
       </button>
 
       <button
         onClick={markApplied}
         disabled={applying}
-        className="px-5 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90"
       >
-        {applying ? 'Processing...' : 'Apply + Track'}
+        <ExternalLink className="w-4 h-4" />
+        {applying
+          ? 'Processing...'
+          : 'Apply + Track'}
       </button>
     </div>
   );

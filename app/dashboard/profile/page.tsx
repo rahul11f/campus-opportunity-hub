@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
+﻿import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import ProfileEditor from '@/components/dashboard/ProfileEditor';
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -14,32 +15,15 @@ export default async function ProfilePage() {
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-3xl mx-auto bg-card border border-border rounded-2xl p-8">
-        <h1 className="text-3xl font-bold mb-6">
-          Profile
-        </h1>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Name</p>
-            <p className="font-medium">{profile?.full_name || 'Not set'}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Email</p>
-            <p className="font-medium">{profile?.email}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Role</p>
-            <p className="font-medium">{profile?.role}</p>
-          </div>
-        </div>
-      </div>
+    <div className="max-w-5xl mx-auto p-8">
+      <ProfileEditor
+        userId={user.id}
+        initialName={profile?.full_name || ''}
+        initialEmail={profile?.email || user.email || ''}
+      />
     </div>
   );
 }

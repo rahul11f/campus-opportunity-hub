@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -149,8 +149,18 @@ export default function AdminLoginPage() {
             </button>
           </form>
         </div>
+      <div className="mt-6 text-center space-y-2">
+  <a href="/" className="block text-sm text-muted-foreground">
+    Return to homepage
+  </a>
+
+  <a href="/login" className="block text-sm text-primary">
+    Student login
+  </a>
+</div>
       </div>
     </div>
   );
 }
+
 
