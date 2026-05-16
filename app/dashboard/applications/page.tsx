@@ -28,24 +28,30 @@ export default async function ApplicationsPage() {
         My Applications
       </h1>
 
-      {(data || []).map((item, i) => (
-        <div
-          key={i}
-          className="rounded-3xl border bg-card p-6"
-        >
-          <h3 className="text-2xl font-bold">
-            {item.opportunities?.role}
-          </h3>
+      {(data || []).map((item, i) => {
+        const opp = Array.isArray(item.opportunities)
+          ? item.opportunities[0]
+          : item.opportunities;
 
-          <p className="text-muted-foreground">
-            {item.opportunities?.company}
-          </p>
+        return (
+          <div
+            key={i}
+            className="rounded-3xl border bg-card p-6"
+          >
+            <h3 className="text-2xl font-bold">
+              {opp?.role || 'Opportunity'}
+            </h3>
 
-          <p className="mt-4 text-primary">
-            {item.status}
-          </p>
-        </div>
-      ))}
+            <p className="text-muted-foreground">
+              {opp?.company || 'Company'}
+            </p>
+
+            <p className="mt-4 text-primary capitalize">
+              {item.status}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
