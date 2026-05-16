@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   createClient,
   createServiceClient,
@@ -12,11 +12,11 @@ function isAdmin(email?: string | null) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const auth = createClient();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await auth.auth.getUser();
 
   if (!user || !isAdmin(user.email)) {
     return NextResponse.json(
@@ -30,9 +30,22 @@ export async function POST(request: NextRequest) {
     rejectionReason,
   } = await request.json();
 
-  const service = createServiceClient();
+  const supabase = createServiceClient();
 
-  await service
+  const { data: contribution } = await supabase
+    .from('student_contributions')
+    .select('*')
+    .eq('id', contributionId)
+    .maybeSingle();
+
+  if (!contribution) {
+    return NextResponse.json(
+      { error: 'Not found' },
+      { status: 404 }
+    );
+  }
+
+  await supabase
     .from('student_contributions')
     .update({
       status: 'rejected',
@@ -43,6 +56,16 @@ export async function POST(request: NextRequest) {
     })
     .eq('id', contributionId)
     .eq('status', 'pending');
+
+  await supabase
+    .from('student_notifications')
+    .insert({
+      user_id: contribution.user_id,
+      title: 'Contribution Rejected',
+      message:
+        rejectionReason || 'Rejected by admin',
+      type: 'error',
+    });
 
   return NextResponse.json({
     success: true,

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   createClient,
   createServiceClient,
@@ -14,11 +14,11 @@ function isAdmin(email?: string | null) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const auth = createClient();
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await auth.auth.getUser();
 
   if (!user || !isAdmin(user.email)) {
     return NextResponse.json(
@@ -34,23 +34,30 @@ export async function POST(request: NextRequest) {
     contributionType,
   } = await request.json();
 
-  const service = createServiceClient();
+  const supabase = createServiceClient();
 
-  const { data: contribution } = await service
+  const { data: contribution } = await supabase
     .from('student_contributions')
     .select('*')
     .eq('id', contributionId)
     .maybeSingle();
 
-  if (!contribution || contribution.status !== 'pending') {
+  if (!contribution) {
     return NextResponse.json(
-      { error: 'Already processed or not found' },
+      { error: 'Contribution not found' },
+      { status: 404 }
+    );
+  }
+
+  if (contribution.status !== 'pending') {
+    return NextResponse.json(
+      { error: 'Already processed' },
       { status: 400 }
     );
   }
 
   const { data: opportunity, error } =
-    await service
+    await supabase
       .from('opportunities')
       .insert({
         company:
@@ -59,8 +66,7 @@ export async function POST(request: NextRequest) {
         role: title || contribution.title,
         type:
           contributionType ||
-          contribution.contribution_type ||
-          'other',
+          contribution.contribution_type,
         instructions:
           content || contribution.content,
         raw_text:
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await service
+  await supabase
     .from('student_contributions')
     .update({
       status: 'approved',
@@ -101,16 +107,17 @@ export async function POST(request: NextRequest) {
         contributionType ||
         contribution.contribution_type,
     })
-    .eq('id', contribution.id);
+    .eq('id', contribution.id)
+    .eq('status', 'pending');
 
-  const { data: points } = await service
+  const { data: points } = await supabase
     .from('student_points')
     .select('*')
     .eq('user_id', contribution.user_id)
     .maybeSingle();
 
   if (points) {
-    await service
+    await supabase
       .from('student_points')
       .update({
         total_points:
@@ -119,7 +126,25 @@ export async function POST(request: NextRequest) {
           (points.approved_contributions || 0) + 1,
       })
       .eq('user_id', contribution.user_id);
+  } else {
+    await supabase
+      .from('student_points')
+      .insert({
+        user_id: contribution.user_id,
+        total_points: REWARD_POINTS,
+        approved_contributions: 1,
+      });
   }
+
+  await supabase
+    .from('student_notifications')
+    .insert({
+      user_id: contribution.user_id,
+      title: 'Contribution Approved',
+      message:
+        'Your contribution was approved and published. You earned 25 points.',
+      type: 'success',
+    });
 
   return NextResponse.json({
     success: true,
