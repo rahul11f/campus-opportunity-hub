@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -6,90 +6,26 @@ import {
   Bookmark,
   ExternalLink,
   CheckCircle2,
-  SearchCheck,
 } from 'lucide-react';
-
-interface Props {
-  opportunityId: string;
-  applyLink?: string | null;
-}
 
 export function StudentOpportunityActions({
   opportunityId,
   applyLink,
-}: Props) {
+}: {
+  opportunityId: string;
+  applyLink?: string;
+}) {
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [checking, setChecking] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [applied, setApplied] = useState(false);
 
   async function saveOpportunity() {
     try {
       setSaving(true);
 
-      const res = await fetch('/api/student/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          opportunityId,
-        }),
-      });
-
-      if (!res.ok) {
-        toast.error(
-          'Please login as student first'
-        );
-        return;
-      }
-
-      toast.success('Opportunity saved');
-    } catch {
-      toast.error('Save failed');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function markApplied() {
-    try {
-      setApplying(true);
-
-      const res = await fetch('/api/student/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          opportunityId,
-        }),
-      });
-
-      if (!res.ok) {
-        toast.error(
-          'Please login as student first'
-        );
-        return;
-      }
-
-      toast.success('Application tracked');
-
-      if (applyLink) {
-        window.open(applyLink, '_blank');
-      }
-    } catch {
-      toast.error('Tracking failed');
-    } finally {
-      setApplying(false);
-    }
-  }
-
-  async function checkEligibility() {
-    try {
-      setChecking(true);
-
       const res = await fetch(
-        '/api/student/eligibility',
+        '/api/student/save',
         {
           method: 'POST',
           headers: {
@@ -101,60 +37,89 @@ export function StudentOpportunityActions({
         }
       );
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error();
+      }
 
-      if (data.eligible) {
-        toast.success(
-          `Eligible: ${data.candidate?.name || 'Matched'}`
-        );
-      } else {
-        toast.error(
-          data.reason ||
-            'Not eligible / list unavailable'
+      setSaved(true);
+      toast.success('Saved successfully');
+    } catch {
+      toast.error('Login required to save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function applyOpportunity() {
+    try {
+      setApplying(true);
+
+      const res = await fetch(
+        '/api/student/apply',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            opportunityId,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      setApplied(true);
+
+      toast.success('Application tracked');
+
+      if (applyLink) {
+        window.open(
+          applyLink,
+          '_blank'
         );
       }
     } catch {
-      toast.error(
-        'Eligibility check failed'
-      );
+      toast.error('Login required');
     } finally {
-      setChecking(false);
+      setApplying(false);
     }
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex gap-3 flex-wrap">
       <button
         onClick={saveOpportunity}
-        disabled={saving}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border font-medium hover:bg-accent"
+        disabled={saving || saved}
+        className="px-5 py-3 rounded-2xl border font-medium flex items-center gap-2"
       >
         <Bookmark className="w-4 h-4" />
-        {saving
+
+        {saved
+          ? 'Saved'
+          : saving
           ? 'Saving...'
-          : 'Save Opportunity'}
+          : 'Save'}
       </button>
 
       <button
-        onClick={checkEligibility}
-        disabled={checking}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-border font-medium hover:bg-accent"
+        onClick={applyOpportunity}
+        disabled={applying || applied}
+        className="px-5 py-3 rounded-2xl bg-primary text-white font-medium flex items-center gap-2"
       >
-        <SearchCheck className="w-4 h-4" />
-        {checking
-          ? 'Checking...'
-          : 'Check Eligibility'}
-      </button>
+        {applied ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : (
+          <ExternalLink className="w-4 h-4" />
+        )}
 
-      <button
-        onClick={markApplied}
-        disabled={applying}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90"
-      >
-        <ExternalLink className="w-4 h-4" />
-        {applying
-          ? 'Processing...'
-          : 'Apply + Track'}
+        {applied
+          ? 'Applied'
+          : applying
+          ? 'Applying...'
+          : 'Apply'}
       </button>
     </div>
   );
