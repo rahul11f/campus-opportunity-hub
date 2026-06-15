@@ -6,48 +6,63 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98.5%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Soft Light Palette */
+    --background: 210 40% 98%; /* Soft slate-50 / off-white */
+    --foreground: 222 47% 11%; /* Deep slate gray for softer reading contrast */
+    --card: 0 0% 100%; /* Pure white cards */
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 214.3 31.8% 91.4%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 214.3 31.8% 94%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary Accent (Soft Indigo/Slate) */
+    --primary: 222 47% 11%; 
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%; /* Softer gray text for secondary info */
+    
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-foreground: 222 47% 11%;
+    
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Soft Dark Palette (if they toggle it) */
+    --background: 222 47% 7%;
     --foreground: 210 40% 98%;
-    --card: 222.2 47% 7.5%;
+    --card: 222 47% 9%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 47% 7.5%;
+    --popover: 222 47% 9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    
+    --secondary: 217 32% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 14%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 217 32% 17%;
     --accent-foreground: 210 40% 98%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 210 40% 98%;
   }
 }
 
@@ -57,76 +72,72 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-semibold;
+    @apply font-display font-semibold tracking-tight text-foreground;
   }
 }
 
 @layer utilities {
   .skeleton {
-    @apply animate-pulse bg-muted rounded;
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 25%,
-      hsl(var(--muted) / 0.7) 50%,
-      hsl(var(--muted)) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.8s ease-in-out infinite;
+    @apply animate-pulse bg-muted rounded-md;
   }
 
   .deadline-urgent {
-    @apply text-red-500 dark:text-red-400;
+    @apply text-rose-600 dark:text-rose-400 font-semibold;
   }
 
   .deadline-warning {
-    @apply text-amber-500 dark:text-amber-400;
+    @apply text-amber-600 dark:text-amber-400 font-semibold;
   }
 
   .deadline-safe {
-    @apply text-emerald-600 dark:text-emerald-400;
+    @apply text-emerald-600 dark:text-emerald-400 font-semibold;
   }
 
+  /* Premium Soft Card Styles */
   .opportunity-card {
-    @apply bg-card rounded-xl border border-border shadow-card transition-all duration-200;
+    @apply relative bg-card border border-border/80 rounded-2xl shadow-sm transition-all duration-300 ease-out;
   }
 
   .opportunity-card:hover {
-    @apply shadow-card-hover -translate-y-0.5;
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)] -translate-y-[2px] border-border;
   }
 
   .dark .opportunity-card {
-    @apply shadow-card-dark;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
 
   .dark .opportunity-card:hover {
-    @apply shadow-card-hover-dark;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
-  .type-badge-placement { @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400; }
-  .type-badge-internship { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400; }
-  .type-badge-hackathon { @apply bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400; }
-  .type-badge-scholarship { @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400; }
-  .type-badge-fellowship { @apply bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400; }
-  .type-badge-competition { @apply bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400; }
-  .type-badge-campus_drive { @apply bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300; }
-  .type-badge-other { @apply bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300; }
+  /* High Contrast Badges (Soft background, dark readable text) */
+  .type-badge-placement { @apply bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50; }
+  .type-badge-internship { @apply bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50; }
+  .type-badge-hackathon { @apply bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800/50; }
+  .type-badge-scholarship { @apply bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50; }
+  .type-badge-fellowship { @apply bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800/50; }
+  .type-badge-competition { @apply bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800/50; }
+  .type-badge-campus_drive { @apply bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700; }
+  .type-badge-other { @apply bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700; }
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground; }
+::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full transition-colors dark:bg-slate-700; }
+::-webkit-scrollbar-thumb:hover { @apply bg-slate-400 dark:bg-slate-600; }
 
 /* Prose styling */
-.prose-opportunity h3 { @apply text-base font-semibold text-foreground mb-2; }
-.prose-opportunity ul { @apply space-y-1 pl-4; }
-.prose-opportunity li { @apply text-sm text-muted-foreground list-disc; }
+.prose-opportunity h3 { @apply text-base font-semibold tracking-tight text-foreground mb-2 mt-4; }
+.prose-opportunity ul { @apply space-y-1.5 pl-5; }
+.prose-opportunity li { @apply text-sm text-muted-foreground list-disc leading-relaxed; }
 
 /* ═══════════════════════════════════════════════
    Admin Panel Theme Helpers
@@ -140,7 +151,7 @@
 }
 
 .admin-card {
-  @apply bg-card border border-border;
+  @apply bg-card border border-border shadow-sm;
 }
 
 /* Table grid: Opportunity | Type | Status | Deadline | Views | Source | Actions (7 cols) */

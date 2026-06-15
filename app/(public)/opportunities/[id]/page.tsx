@@ -23,6 +23,7 @@ import {
 import { EligibilityChecker } from '@/components/student/EligibilityChecker';
 import { OpportunityDetailTabs } from '@/components/opportunity/OpportunityDetailTabs';
 import { StudentOpportunityActions } from '@/components/auth/StudentOpportunityActions';
+import { BackButton } from '@/components/shared/BackButton';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -151,12 +152,7 @@ export default async function OpportunityPage({ params }: { params: { id: string
                 </a>
               )}
               <StudentOpportunityActions opportunityId={data.id} applyLink={applyLink} />
-              <Link
-                href="/search"
-                className="flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </Link>
+              <BackButton fallbackUrl="/search" />
             </div>
 
             {isExpired && (

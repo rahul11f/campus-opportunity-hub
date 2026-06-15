@@ -32,11 +32,11 @@ export function OpportunityCard({
   opportunity: any;
 }) {
   return (
-    <div className="rounded-2xl border bg-card hover:shadow-xl hover:border-primary transition-all duration-300 overflow-hidden">
+    <div className="opportunity-card group overflow-hidden">
       <div className="p-5 space-y-4">
         <div className="flex justify-between gap-3">
           <div className="flex gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl border bg-muted flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-xl border bg-background shadow-sm flex items-center justify-center shrink-0">
               {opportunity.company_logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -52,20 +52,20 @@ export function OpportunityCard({
             <div className="min-w-0">
               <Link
                 href={`/opportunities/${opportunity.id}`}
-                className="text-lg md:text-xl font-bold hover:text-primary line-clamp-2"
+                className="text-lg font-bold tracking-tight text-foreground hover:text-primary transition-colors line-clamp-2"
               >
                 {opportunity.role}
               </Link>
 
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-sm font-medium text-muted-foreground truncate mt-0.5">
                 {opportunity.company}
               </p>
             </div>
           </div>
 
           {opportunity.featured && (
-            <span className="px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs flex items-center gap-1 h-fit shrink-0">
-              <Star className="w-3 h-3" />
+            <span className="px-2.5 py-1 rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium text-[11px] uppercase tracking-wider flex items-center gap-1 h-fit shrink-0">
+              <Star className="w-3 h-3 fill-amber-500/50" />
               Featured
             </span>
           )}
@@ -90,7 +90,7 @@ export function OpportunityCard({
         </div>
 
         {opportunity.eligibility && (
-          <div className="rounded-xl border p-3 bg-muted/20">
+          <div className="rounded-xl border bg-card p-3">
             <div className="flex items-center gap-2 mb-2 font-medium text-sm">
               <GraduationCap className="w-4 h-4" />
               Eligibility
@@ -132,7 +132,7 @@ export function OpportunityCard({
 
 function Chip({ children, icon }: any) {
   return (
-    <span className="px-3 py-1.5 rounded-full border text-xs flex items-center gap-1">
+    <span className="px-2.5 py-1 rounded-md border bg-card shadow-sm text-xs font-semibold text-foreground/80 flex items-center gap-1.5 transition-colors group-hover:border-border">
       {icon}
       {children}
     </span>
@@ -141,7 +141,7 @@ function Chip({ children, icon }: any) {
 
 function MiniChip({ children }: any) {
   return (
-    <span className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs">
+    <span className="px-2 py-0.5 rounded-md border bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 text-xs font-semibold">
       {children}
     </span>
   );

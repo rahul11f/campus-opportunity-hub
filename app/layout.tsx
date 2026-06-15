@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
+import { Navbar } from '@/components/shared/Navbar';
+import { MobileNav } from '@/components/shared/MobileNav';
 import { Toaster } from 'sonner';
 import './globals.css';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
@@ -46,16 +48,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange={false}
         >
-          {children}
+          <div className="flex flex-col min-h-screen pb-16 md:pb-0">
+            {children}
+            <MobileNav />
+          </div>
+          <Toaster position="bottom-right" richColors />
           <InstallPrompt />
-          <Toaster position="top-right" richColors closeButton />
         </ThemeProvider>
       </body>
     </html>
   );
 }
-

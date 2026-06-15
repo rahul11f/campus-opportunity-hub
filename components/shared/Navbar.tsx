@@ -57,47 +57,49 @@ export function Navbar() {
       : '/api/auth/signout?redirect=/login';
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <GraduationCap className="w-6 h-6 text-primary" />
-          <span className="font-bold text-sm md:text-base">
-            Campus Opportunity Hub
+        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+          <div className="bg-primary/10 p-1.5 rounded-lg border border-primary/20">
+            <GraduationCap className="w-5 h-5 text-primary" />
+          </div>
+          <span className="font-bold tracking-tight text-sm md:text-base">
+            Campus Hub
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-6">
-          <Link href="/search" className="flex items-center gap-2">
+        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+          <Link href="/search" className="flex items-center gap-2 hover:text-foreground transition-colors">
             <Briefcase className="w-4 h-4" />
             Opportunities
           </Link>
 
-          <Link href="/leaderboard" className="flex items-center gap-2">
+          <Link href="/leaderboard" className="flex items-center gap-2 hover:text-foreground transition-colors">
             <Trophy className="w-4 h-4" />
             Leaderboard
           </Link>
 
-          <Link href="/dashboard/contribute" className="flex items-center gap-2">
+          <Link href="/dashboard/contribute" className="flex items-center gap-2 hover:text-foreground transition-colors">
             <PlusCircle className="w-4 h-4" />
             Contribute
           </Link>
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-4">
           {role === 'guest' ? (
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-xl border"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                Student Login
+                Log in
               </Link>
 
               <Link
                 href="/admin/login"
-                className="px-4 py-2 rounded-xl bg-primary text-white"
+                className="px-4 py-2 text-sm font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
               >
-                Admin
+                Admin Access
               </Link>
             </>
           ) : (
@@ -122,13 +124,10 @@ export function Navbar() {
 
           {mounted && (
             <button
-              onClick={() =>
-                setTheme(theme === 'dark' ? 'light' : 'dark')
-              }
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
-              {theme === 'dark'
-                ? <Sun className="w-4 h-4" />
-                : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           )}
         </div>

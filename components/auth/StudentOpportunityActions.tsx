@@ -95,7 +95,7 @@ export function StudentOpportunityActions({
       <button
         onClick={saveOpportunity}
         disabled={saving || saved}
-        className="px-5 py-3 rounded-2xl border font-medium flex items-center gap-2"
+        className="px-5 py-3 rounded-2xl border bg-background hover:bg-muted font-medium flex items-center gap-2 transition-colors shadow-sm"
       >
         <Bookmark className="w-4 h-4" />
 
@@ -109,7 +109,7 @@ export function StudentOpportunityActions({
       <button
         onClick={applyOpportunity}
         disabled={applying || applied}
-        className="px-5 py-3 rounded-2xl bg-primary text-white font-medium flex items-center gap-2"
+        className="px-5 py-3 rounded-2xl bg-primary text-primary-foreground font-medium flex items-center gap-2 hover:opacity-90 transition-opacity shadow-sm"
       >
         {applied ? (
           <CheckCircle2 className="w-4 h-4" />
