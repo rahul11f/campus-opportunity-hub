@@ -1,5 +1,7 @@
 # 🎓 Campus Opportunity Hub
 
+**[🚀 Live Demo on Vercel](https://campus-opportunity-hub.vercel.app)**
+
 > AI-powered platform that transforms raw Telegram/WhatsApp placement notices into clean, structured, student-friendly opportunity listings.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
