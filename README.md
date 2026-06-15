@@ -9,6 +9,16 @@
 
 ---
 
+## 📖 About
+
+**Campus Opportunity Hub** is a modern, student-centric web platform designed to streamline the way university students discover, track, and apply for placement opportunities, internships, and hackathons. 
+
+Traditionally, placement cell notifications are scattered across WhatsApp groups, Telegram channels, and emails. This creates a chaotic experience where students often miss deadlines or struggle to find relevant links. 
+
+This platform solves that by acting as a central, structured database. It uses AI to parse messy notification text into structured, searchable cards with clear deadlines, eligibility criteria, and direct application links. It also features a student dashboard to track saved opportunities and applications, and an admin dashboard for efficient moderation and publishing.
+
+---
+
 ## 🎯 What It Does
 
 Students receive chaotic placement notifications via Telegram/WhatsApp. This platform gives:
