@@ -1,7 +1,7 @@
 import type {
-  ExtractedOpportunity,
   OpportunityType,
 } from '@/types/opportunity';
+import type { ExtractedOpportunityData } from '@/lib/validators';
 
 function unique(arr: string[]) {
   return [...new Set(arr.filter(Boolean))];
@@ -29,7 +29,7 @@ function extractMatch(
 export function fallbackExtract(
   text: string,
   sourceLink: string | null
-): Partial<ExtractedOpportunity> {
+): ExtractedOpportunityData {
   const normalized = normalize(text);
 
   const company =
@@ -148,31 +148,62 @@ export function fallbackExtract(
   }
 
   return {
-    company,
-    role,
-    type,
-    salary,
-    location,
+    basic_information: {
+      company_name: company,
+      company_logo: 'Not Available',
+      opportunity_type: type,
+      round_name: 'Not Mentioned',
+      verified_status: 'No',
+      application_deadline: deadline || 'Not Mentioned',
+      jd_link: applyLink || 'Not Mentioned',
+    },
     eligibility: {
-      branches,
-      cgpa,
-      backlog,
-      batch,
-      other: null,
+      educational_qualification: 'Not Mentioned',
+      eligible_branches: branches.join(', ') || 'Not Mentioned',
+      eligible_streams: 'Not Mentioned',
+      passing_batch: batch || 'Not Mentioned',
+      minimum_cgpa_percentage: cgpa || 'Not Mentioned',
+      cutoff_criteria: 'Not Mentioned',
+      active_backlogs_allowed: backlog || 'Not Mentioned',
+      gender_eligibility: 'Any',
     },
-    skills,
-    responsibilities: [],
-    interview_process: {
-      rounds,
-      description: interviewDescriptions,
+    job_details: {
+      job_role: role || 'Not Mentioned',
+      salary_ctc: salary || 'Not Mentioned',
+      stipend: 'Not Mentioned',
+      location: location || 'Not Mentioned',
+      work_mode: 'Not Mentioned',
+      employment_type: 'Not Mentioned',
     },
-    instructions: normalized.substring(0, 2500),
-    apply_link: applyLink,
-    deadline,
-    tags: unique([
-      type,
-      ...branches.slice(0, 5),
-    ]),
+    recruitment_process: {
+      hiring_process: roundsText || 'Not Mentioned',
+      number_of_rounds: rounds ? String(rounds) : 'Not Mentioned',
+      elimination_rounds: 'Not Mentioned',
+    },
+    schedule: {
+      event_date: 'Not Mentioned',
+      time: 'Not Mentioned',
+      venue: 'Not Mentioned',
+      mode: 'Not Mentioned',
+    },
+    communication: {
+      communication_channel: 'Not Mentioned',
+      check_inbox: 'Not Mentioned',
+      check_spam_folder: 'Not Mentioned',
+      timing_shared_by: 'Not Mentioned',
+      additional_instructions: 'Not Mentioned',
+    },
+    attachments: {
+      jd_link: applyLink || 'Not Mentioned',
+      student_eligible_list: 'Not Mentioned',
+      additional_documents: 'Not Mentioned',
+    },
+    source_metadata: {
+      issued_by: 'T & P',
+      institution: 'Not Mentioned',
+      reminder_notice: 'Not Mentioned',
+      notice_type: 'Not Mentioned',
+    },
     confidence_score: 0.72,
   };
 }

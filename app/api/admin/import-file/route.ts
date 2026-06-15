@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cleanText, truncateText } from '@/lib/pipeline/textCleaner';
 import { extractTextFromImageBuffer } from '@/lib/pipeline/ocrExtractor';
@@ -6,6 +6,18 @@ import { parsePdfBuffer } from '@/lib/pipeline/webScraper';
 import { extractTextFromScannedPdf } from '@/lib/pipeline/pdfOcr';
 import { extractWithGemini } from '@/lib/pipeline/geminiExtractor';
 import { fallbackExtract } from '@/lib/pipeline/fallbackExtractor';
+import {
+  checkRateLimit,
+  rateLimitResponse,
+} from '@/lib/rateLimit';
+import {
+  getFeatureFlags,
+  getUsageLimits,
+} from '@/lib/settings';
+import {
+  getTodayUsageCount,
+  logUsage,
+} from '@/lib/usage';
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -19,12 +31,11 @@ const MAX_FILE_MB = 15;
 const DEBUG_BYPASS_OCR = false;
 
 function isAdmin(email?: string | null) {
-  const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '')
+  return (process.env.ADMIN_EMAIL_WHITELIST || '')
     .split(',')
     .map((e) => e.trim())
-    .filter(Boolean);
-
-  return adminEmails.includes(email || '');
+    .filter(Boolean)
+    .includes(email || '');
 }
 
 async function withTimeout<T>(
@@ -67,6 +78,41 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const rl = await checkRateLimit(
+    request,
+    'admin-import-file'
+  );
+
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
+
+  const flags = await getFeatureFlags();
+
+  if (!flags.ocr_enabled) {
+    return NextResponse.json(
+      { error: 'OCR disabled' },
+      { status: 403 }
+    );
+  }
+
+  const limits = await getUsageLimits();
+
+  const todayUsage =
+    await getTodayUsageCount('ocr');
+
+  if (
+    todayUsage >= limits.ocr_daily_limit
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          'Daily OCR quota reached',
+      },
+      { status: 429 }
+    );
+  }
+
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
 
@@ -79,27 +125,39 @@ export async function POST(request: NextRequest) {
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: 'Unsupported file type' },
-      { status: 422 }
-    );
-  }
-
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    return NextResponse.json(
       {
-        error: `File too large. Max ${MAX_FILE_MB}MB`,
+        error:
+          'Unsupported file type',
       },
       { status: 422 }
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  if (
+    file.size >
+    MAX_FILE_MB * 1024 * 1024
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          `File too large. Max ${MAX_FILE_MB}MB`,
+      },
+      { status: 422 }
+    );
+  }
+
+  const buffer = Buffer.from(
+    await file.arrayBuffer()
+  );
 
   let rawText = '';
   let extractionSource = '';
 
   try {
-    if (file.type === 'application/pdf') {
+    if (
+      file.type ===
+      'application/pdf'
+    ) {
       const pdf = await withTimeout(
         parsePdfBuffer(buffer),
         10000,
@@ -107,46 +165,50 @@ export async function POST(request: NextRequest) {
       );
 
       if (pdf.isImageOnly) {
-        const scanned = await withTimeout(
-          extractTextFromScannedPdf(buffer),
-          30000,
-          'Scanned PDF OCR'
-        );
+        const scanned =
+          await withTimeout(
+            extractTextFromScannedPdf(
+              buffer
+            ),
+            30000,
+            'Scanned PDF OCR'
+          );
 
         rawText = scanned.text;
-        extractionSource = 'scanned-pdf-ocr';
+        extractionSource =
+          'scanned-pdf-ocr';
       } else {
         rawText = pdf.text;
         extractionSource = 'pdf';
       }
     } else {
       if (DEBUG_BYPASS_OCR) {
-        rawText = `
-Company: Test Company
-Role: Software Engineer
-Type: placement
-Salary: 8 LPA
-Location: Bangalore
-CGPA: 6+
-Batch: 2026
-Instructions: Test upload pipeline
-        `;
-        extractionSource = 'debug-bypass';
+        rawText = 'Test OCR';
+        extractionSource =
+          'debug-bypass';
       } else {
-        const ocr = await withTimeout(
-          extractTextFromImageBuffer(buffer),
-          30000,
-          'Image OCR'
-        );
+        const ocr =
+          await withTimeout(
+            extractTextFromImageBuffer(
+              buffer
+            ),
+            30000,
+            'Image OCR'
+          );
 
         rawText = ocr.text;
-        extractionSource = 'ocr-image';
+        extractionSource =
+          'ocr-image';
       }
     }
 
-    const cleaned = cleanText(rawText).cleaned;
+    const cleaned =
+      cleanText(rawText).cleaned;
 
-    if (!cleaned || cleaned.length < 30) {
+    if (
+      !cleaned ||
+      cleaned.length < 30
+    ) {
       return NextResponse.json(
         {
           error:
@@ -160,14 +222,18 @@ Instructions: Test upload pipeline
     let extractionError = null;
 
     try {
-      const aiResult = await withTimeout(
-        extractWithGemini(
-          truncateText(cleaned, 8000),
-          ''
-        ),
-        20000,
-        'Gemini extraction'
-      );
+      const aiResult =
+        await withTimeout(
+          extractWithGemini(
+            truncateText(
+              cleaned,
+              8000
+            ),
+            ''
+          ),
+          20000,
+          'Gemini extraction'
+        );
 
       extracted = aiResult.data;
     } catch (err) {
@@ -176,29 +242,43 @@ Instructions: Test upload pipeline
           ? err.message
           : 'AI extraction failed';
 
-      extracted = fallbackExtract(
-        cleaned,
-        null
-      );
+      extracted =
+        fallbackExtract(
+          cleaned,
+          null
+        );
     }
+
+    await logUsage(
+      'ocr',
+      'import-file',
+      true
+    );
 
     return NextResponse.json({
       success: true,
       source: extractionSource,
       extracted,
       extractionError,
-      cleanedText: truncateText(
-        cleaned,
-        1000
-      ),
+      cleanedText:
+        truncateText(
+          cleaned,
+          1000
+        ),
     });
   } catch (err) {
+    await logUsage(
+      'ocr',
+      'import-file',
+      false
+    );
+
     return NextResponse.json(
       {
         error:
           err instanceof Error
             ? err.message
-            : 'Upload processing failed',
+            : 'Upload failed',
       },
       { status: 500 }
     );

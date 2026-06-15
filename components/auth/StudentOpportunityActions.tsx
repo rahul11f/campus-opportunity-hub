@@ -38,13 +38,14 @@ export function StudentOpportunityActions({
       );
 
       if (!res.ok) {
-        throw new Error();
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to save');
       }
 
       setSaved(true);
       toast.success('Saved successfully');
-    } catch {
-      toast.error('Login required to save');
+    } catch (err: any) {
+      toast.error(err.message || 'Login required to save');
     } finally {
       setSaving(false);
     }
@@ -68,7 +69,8 @@ export function StudentOpportunityActions({
       );
 
       if (!res.ok) {
-        throw new Error();
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to apply');
       }
 
       setApplied(true);
@@ -81,8 +83,8 @@ export function StudentOpportunityActions({
           '_blank'
         );
       }
-    } catch {
-      toast.error('Login required');
+    } catch (err: any) {
+      toast.error(err.message || 'Login required');
     } finally {
       setApplying(false);
     }

@@ -1,193 +1,148 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { LoginSchema } from '@/lib/validators';
+import { GraduationCap, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export function StudentAuthForm() {
-  const router = useRouter();
+  const supabase = createClient();
 
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function ensureProfile(userId: string, userEmail: string) {
-    const supabase = createClient();
-
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('id', userId)
-      .single();
-
-    if (data?.role === 'admin') {
-      router.push('/admin/dashboard');
-      router.refresh();
-      return;
-    }
-
-    if (!data) {
-      await supabase.from('profiles').insert({
-        id: userId,
-        email: userEmail,
-        full_name: fullName || null,
-        role: 'student',
-      });
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-
-    const parsed = LoginSchema.safeParse({ email, password });
-
-    if (!parsed.success) {
-      setError(parsed.error.errors[0].message);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        const { data, error } =
+          await supabase.auth.signUp({
+            email,
+            password,
+          });
 
         if (error) {
-          setError(error.message);
+          alert(error.message);
           return;
         }
 
         if (data.user) {
-          await ensureProfile(data.user.id, email);
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            full_name: fullName,
+            email,
+          });
+
+          await supabase
+            .from('student_profiles')
+            .upsert({
+              user_id: data.user.id,
+              full_name: fullName,
+              email,
+            });
         }
 
-        router.push('/dashboard');
-        router.refresh();
-        return;
+        alert('Check email verification.');
+      } else {
+        const { error } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (error) {
+          alert(error.message);
+          return;
+        }
+
+        window.location.href = '/dashboard';
       }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      if (data.user) {
-        await ensureProfile(data.user.id, email);
-      }
-
-      router.push('/dashboard');
-      router.refresh();
-    } catch {
-      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-md bg-card border border-border rounded-2xl p-8 shadow-card">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <GraduationCap className="w-6 h-6 text-white" />
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background relative">
+      <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to Website
+      </Link>
+      <div className="w-full max-w-md rounded-3xl border bg-card p-8 shadow-xl">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="w-7 h-7 text-white" />
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground">
-            {mode === 'login' ? 'Student Login' : 'Create Account'}
+          <h1 className="text-3xl font-bold">
+            Student Portal
           </h1>
-        </div>
 
-        {error && (
-          <div className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-            {error}
-          </div>
-        )}
+          <p className="text-muted-foreground mt-2">
+            Login or create account
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'signup' && (
             <input
-              type="text"
-              placeholder="Full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3 py-2.5 border border-border rounded-xl bg-background"
+              placeholder="Full Name"
+              required
+              className="w-full px-4 py-3 rounded-2xl border"
             />
           )}
 
           <input
             type="email"
-            placeholder="your@email.com"
             value={email}
-            autoComplete="email"
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2.5 border border-border rounded-xl bg-background"
+            placeholder="Email"
+            required
+            className="w-full px-4 py-3 rounded-2xl border"
           />
 
-          <div className="relative">
-            <input
-              type={showPass ? 'text' : 'password'}
-              placeholder="Password"
-              value={password}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2.5 border border-border rounded-xl bg-background pr-10"
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-            >
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            className="w-full px-4 py-3 rounded-2xl border"
+          />
 
           <button
-            type="submit"
             disabled={loading}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold"
+            className="w-full bg-primary text-white py-3 rounded-2xl font-semibold"
           >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create Account'}
+            {loading
+              ? 'Please wait...'
+              : mode === 'login'
+              ? 'Login'
+              : 'Create Account'}
           </button>
         </form>
 
         <button
-          onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-          className="w-full mt-4 text-sm text-primary"
+          onClick={() =>
+            setMode(
+              mode === 'login'
+                ? 'signup'
+                : 'login'
+            )
+          }
+          className="w-full mt-4 text-primary font-medium"
         >
           {mode === 'login'
-            ? 'New user? Create account'
-            : 'Already have an account? Login'}
+            ? 'Create new account'
+            : 'Already have account? Login'}
         </button>
-
-<div className="mt-6 text-center space-y-2">
-  <a href="/" className="block text-sm text-muted-foreground hover:text-primary">
-    Continue browsing homepage
-  </a>
-
-  <a href="/admin/login" className="block text-sm text-primary">
-    Admin login
-  </a>
-</div>
       </div>
     </div>
   );
 }
-

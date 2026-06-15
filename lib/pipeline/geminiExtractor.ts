@@ -1,4 +1,4 @@
-﻿import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   ExtractedOpportunitySchema,
   type ExtractedOpportunityData,
@@ -11,7 +11,7 @@ STRICT RULES:
 - OCR may be noisy, duplicated, malformed, or partially corrupted.
 - NEVER hallucinate missing facts.
 - Infer only from visible evidence.
-- If uncertain, return null.
+- If information is missing, return "Not Mentioned"
 - Prefer exact extracted values.
 - Output VALID JSON ONLY.
 - No markdown.
@@ -23,66 +23,88 @@ function buildPrompt(
   fetchedContent: string
 ) {
   return `
-Extract structured opportunity data.
+Extract structured placement opportunity data from the provided notice.
 
-IMPORTANT EXTRACTION TARGETS:
+Return JSON in these sections:
+1. basic_information
+2. eligibility
+3. job_details
+4. recruitment_process
+5. schedule
+6. communication
+7. attachments
+8. source_metadata
 
-COMPANY:
-- recruiter/company name
-- normalize obvious OCR corruption
+Rules:
+- If information is missing, return "Not Mentioned"
+- Detect all educational qualifications
+- Detect hiring rounds
+- Detect dates/times
+- Detect online/offline mode
+- Extract links
+- Normalize repeated values
+- Return clean JSON only
 
-ROLE:
-- exact job role / internship title
-
-TYPE:
-Must be one of:
-placement
-internship
-hackathon
-scholarship
-campus_drive
-fellowship
-competition
-other
-
-SALARY:
-Extract:
-- CTC
-- stipend
-- compensation
-- package
-
-LOCATION:
-City / work location if visible
-
-ELIGIBILITY:
-Extract:
-- branches
-- CGPA
-- backlog rules
-- eligible batch
-- other criteria
-
-INTERVIEW:
-Extract:
-- rounds count
-- round names
-
-LINKS:
-Extract actual apply link if visible
-
-DATES:
-Extract exact deadline if visible
-
-SKILLS:
-Extract technologies / required skills
-
-INSTRUCTIONS:
-Summarize actionable instructions only
-
-CONFIDENCE:
-0.0 to 1.0
-Higher only if evidence is strong.
+JSON SCHEMA:
+{
+  "basic_information": {
+    "company_name": "string | Not Mentioned",
+    "company_logo": "string | Not Mentioned",
+    "opportunity_type": "string | Not Mentioned",
+    "round_name": "string | Not Mentioned",
+    "verified_status": "string | Not Mentioned",
+    "application_deadline": "string | Not Mentioned",
+    "jd_link": "string | Not Mentioned"
+  },
+  "eligibility": {
+    "educational_qualification": "string | Not Mentioned",
+    "eligible_branches": "string | Not Mentioned",
+    "eligible_streams": "string | Not Mentioned",
+    "passing_batch": "string | Not Mentioned",
+    "minimum_cgpa_percentage": "string | Not Mentioned",
+    "cutoff_criteria": "string | Not Mentioned",
+    "active_backlogs_allowed": "string | Not Mentioned",
+    "gender_eligibility": "string | Not Mentioned"
+  },
+  "job_details": {
+    "job_role": "string | Not Mentioned",
+    "salary_ctc": "string | Not Mentioned",
+    "stipend": "string | Not Mentioned",
+    "location": "string | Not Mentioned",
+    "work_mode": "string | Not Mentioned",
+    "employment_type": "string | Not Mentioned"
+  },
+  "recruitment_process": {
+    "hiring_process": "string | Not Mentioned",
+    "number_of_rounds": "string | Not Mentioned",
+    "elimination_rounds": "string | Not Mentioned"
+  },
+  "schedule": {
+    "event_date": "string | Not Mentioned",
+    "time": "string | Not Mentioned",
+    "venue": "string | Not Mentioned",
+    "mode": "string | Not Mentioned"
+  },
+  "communication": {
+    "communication_channel": "string | Not Mentioned",
+    "check_inbox": "string | Not Mentioned",
+    "check_spam_folder": "string | Not Mentioned",
+    "timing_shared_by": "string | Not Mentioned",
+    "additional_instructions": "string | Not Mentioned"
+  },
+  "attachments": {
+    "jd_link": "string | Not Mentioned",
+    "student_eligible_list": "string | Not Mentioned",
+    "additional_documents": "string | Not Mentioned"
+  },
+  "source_metadata": {
+    "issued_by": "string | Not Mentioned",
+    "institution": "string | Not Mentioned",
+    "reminder_notice": "string | Not Mentioned",
+    "notice_type": "string | Not Mentioned"
+  },
+  "confidence_score": 0.0 to 1.0
+}
 
 RAW NOTICE:
 ${rawText}
@@ -91,34 +113,6 @@ ${
   fetchedContent
     ? `FETCHED CONTENT:\n${fetchedContent}`
     : ''
-}
-
-RETURN EXACT JSON:
-
-{
-  "company": string | null,
-  "role": string | null,
-  "type": "placement"|"internship"|"hackathon"|"scholarship"|"campus_drive"|"fellowship"|"competition"|"other"|null,
-  "salary": string | null,
-  "location": string | null,
-  "eligibility": {
-    "branches": string[] | null,
-    "cgpa": string | null,
-    "backlog": string | null,
-    "batch": string | null,
-    "other": string | null
-  } | null,
-  "skills": string[] | null,
-  "responsibilities": string[] | null,
-  "interview_process": {
-    "rounds": number | null,
-    "description": string[] | null
-  } | null,
-  "instructions": string | null,
-  "apply_link": string | null,
-  "deadline": string | null,
-  "tags": string[] | null,
-  "confidence_score": number
 }
 `;
 }

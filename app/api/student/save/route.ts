@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import {
+  createClient,
+  createServiceClient,
+} from '@/lib/supabase/server';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  opportunityId: z.string().uuid(),
+});
 
 export async function POST(req: Request) {
   const auth = createClient();
@@ -15,16 +23,61 @@ export async function POST(req: Request) {
     );
   }
 
-  const { opportunityId } = await req.json();
+  let body;
+
+  try {
+    body = BodySchema.parse(
+      await req.json()
+    );
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid payload' },
+      { status: 400 }
+    );
+  }
 
   const supabase = createServiceClient();
 
-  await supabase
+  const { data: opportunity } =
+    await supabase
+      .from('opportunities')
+      .select('id')
+      .eq('id', body.opportunityId)
+      .eq('is_published', true)
+      .eq('is_expired', false)
+      .maybeSingle();
+
+  if (!opportunity) {
+    return NextResponse.json(
+      { error: 'Opportunity not found' },
+      { status: 404 }
+    );
+  }
+
+  const { data: existingSave } = await supabase
     .from('student_saved_opportunities')
-    .upsert({
-      user_id: user.id,
-      opportunity_id: opportunityId,
-    });
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('opportunity_id', body.opportunityId)
+    .maybeSingle();
+
+  let error = null;
+  if (!existingSave) {
+    const { error: insertError } = await supabase
+      .from('student_saved_opportunities')
+      .insert({
+        user_id: user.id,
+        opportunity_id: body.opportunityId,
+      });
+    error = insertError;
+  }
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     success: true,

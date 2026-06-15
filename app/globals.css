@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98.5%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -14,9 +14,9 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 214.3 31.8% 91.4%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 214.3 31.8% 94%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
@@ -31,15 +31,15 @@
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 6%;
+    --card: 222.2 47% 7.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 6%;
+    --popover: 222.2 47% 7.5%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 14%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
@@ -127,3 +127,44 @@
 .prose-opportunity h3 { @apply text-base font-semibold text-foreground mb-2; }
 .prose-opportunity ul { @apply space-y-1 pl-4; }
 .prose-opportunity li { @apply text-sm text-muted-foreground list-disc; }
+
+/* ═══════════════════════════════════════════════
+   Admin Panel Theme Helpers
+   ═══════════════════════════════════════════════ */
+.admin-bg {
+  @apply bg-background;
+}
+
+.admin-sidebar {
+  @apply bg-card border-r border-border;
+}
+
+.admin-card {
+  @apply bg-card border border-border;
+}
+
+/* Table grid: Opportunity | Type | Status | Deadline | Views | Source | Actions (7 cols) */
+.admin-table-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 0.9fr 0.8fr 1.3fr 0.7fr 0.8fr 1.5fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .admin-table-grid {
+    grid-template-columns: 1fr auto auto;
+  }
+  .admin-table-grid > div:nth-child(2),
+  .admin-table-grid > div:nth-child(4),
+  .admin-table-grid > div:nth-child(5),
+  .admin-table-grid > div:nth-child(6) {
+    display: none;
+  }
+}
+
+/* Admin page padding compensates for fixed sidebar */
+@media (max-width: 768px) {
+  .admin-sidebar { display: none; }
+  .admin-sidebar + main { margin-left: 0 !important; }
+}

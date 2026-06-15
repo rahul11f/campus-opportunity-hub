@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const OpportunityTypeSchema = z.enum([
   'placement',
@@ -12,12 +12,12 @@ export const OpportunityTypeSchema = z.enum([
 ]);
 
 export const EligibilitySchema = z.object({
-  branches: z.array(z.string()).nullable(),
-  cgpa: z.string().nullable(),
-  backlog: z.string().nullable(),
-  batch: z.string().nullable(),
-  other: z.string().nullable(),
-});
+  branches: z.array(z.string()).nullable().optional(),
+  cgpa: z.string().nullable().optional(),
+  backlog: z.string().nullable().optional(),
+  batch: z.string().nullable().optional(),
+  other: z.string().nullable().optional(),
+}).catchall(z.any());
 
 export const InterviewProcessSchema = z.object({
   rounds: z.number().nullable(),
@@ -25,20 +25,63 @@ export const InterviewProcessSchema = z.object({
 });
 
 export const ExtractedOpportunitySchema = z.object({
-  company: z.string().nullable(),
-  role: z.string().nullable(),
-  type: OpportunityTypeSchema.nullable(),
-  salary: z.string().nullable(),
-  location: z.string().nullable(),
-  eligibility: EligibilitySchema.nullable(),
-  skills: z.array(z.string()).nullable(),
-  responsibilities: z.array(z.string()).nullable(),
-  interview_process: InterviewProcessSchema.nullable(),
-  instructions: z.string().nullable(),
-  apply_link: z.string().nullable(),
-  deadline: z.string().nullable(),
-  tags: z.array(z.string()).nullable(),
-  confidence_score: z.number().min(0).max(1),
+  basic_information: z.object({
+    company_name: z.string().nullable().optional(),
+    company_logo: z.string().nullable().optional(),
+    opportunity_type: z.string().nullable().optional(),
+    round_name: z.string().nullable().optional(),
+    verified_status: z.string().nullable().optional(),
+    application_deadline: z.string().nullable().optional(),
+    jd_link: z.string().nullable().optional(),
+  }).nullable().optional(),
+  eligibility: z.object({
+    educational_qualification: z.string().nullable().optional(),
+    eligible_branches: z.string().nullable().optional(),
+    eligible_streams: z.string().nullable().optional(),
+    passing_batch: z.string().nullable().optional(),
+    minimum_cgpa_percentage: z.string().nullable().optional(),
+    cutoff_criteria: z.string().nullable().optional(),
+    active_backlogs_allowed: z.string().nullable().optional(),
+    gender_eligibility: z.string().nullable().optional(),
+  }).nullable().optional(),
+  job_details: z.object({
+    job_role: z.string().nullable().optional(),
+    salary_ctc: z.string().nullable().optional(),
+    stipend: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    work_mode: z.string().nullable().optional(),
+    employment_type: z.string().nullable().optional(),
+  }).nullable().optional(),
+  recruitment_process: z.object({
+    hiring_process: z.string().nullable().optional(),
+    number_of_rounds: z.string().nullable().optional(),
+    elimination_rounds: z.string().nullable().optional(),
+  }).nullable().optional(),
+  schedule: z.object({
+    event_date: z.string().nullable().optional(),
+    time: z.string().nullable().optional(),
+    venue: z.string().nullable().optional(),
+    mode: z.string().nullable().optional(),
+  }).nullable().optional(),
+  communication: z.object({
+    communication_channel: z.string().nullable().optional(),
+    check_inbox: z.string().nullable().optional(),
+    check_spam_folder: z.string().nullable().optional(),
+    timing_shared_by: z.string().nullable().optional(),
+    additional_instructions: z.string().nullable().optional(),
+  }).nullable().optional(),
+  attachments: z.object({
+    jd_link: z.string().nullable().optional(),
+    student_eligible_list: z.string().nullable().optional(),
+    additional_documents: z.string().nullable().optional(),
+  }).nullable().optional(),
+  source_metadata: z.object({
+    issued_by: z.string().nullable().optional(),
+    institution: z.string().nullable().optional(),
+    reminder_notice: z.string().nullable().optional(),
+    notice_type: z.string().nullable().optional(),
+  }).nullable().optional(),
+  confidence_score: z.number().min(0).max(1).optional().default(1),
 });
 
 export const OpportunityCreateSchema = z.object({

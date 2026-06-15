@@ -1,72 +1,54 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
   Sun,
   Moon,
-  Search,
   GraduationCap,
   Menu,
   X,
   LogOut,
   Shield,
   LayoutDashboard,
+  Trophy,
+  Briefcase,
+  PlusCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { CollegeSelector } from '@/components/shared/CollegeSelector';
 
 type UserRole = 'guest' | 'student' | 'admin';
 
-interface College {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 export function Navbar() {
   const { theme, setTheme } = useTheme();
-  const pathname = usePathname();
 
   const [mounted, setMounted] = useState(false);
   const [role, setRole] = useState<UserRole>('guest');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [colleges, setColleges] = useState<College[]>([]);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
 
-  useEffect(() => {
-    async function loadData() {
+    async function loadUser() {
       const supabase = createClient();
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+      if (!user) return;
 
-        setRole(data?.role === 'admin' ? 'admin' : 'student');
-      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-      const { data: collegeData } = await supabase
-        .from('colleges')
-        .select('id,name,slug')
-        .eq('is_active', true)
-        .order('name');
-
-      setColleges(collegeData || []);
+      setRole(data?.role === 'admin' ? 'admin' : 'student');
     }
 
-    loadData();
+    loadUser();
   }, []);
 
   const signoutHref =
@@ -75,61 +57,54 @@ export function Navbar() {
       : '/api/auth/signout?redirect=/login';
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
+    <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
           <GraduationCap className="w-6 h-6 text-primary" />
-          <span className="font-bold">
+          <span className="font-bold text-sm md:text-base">
             Campus Opportunity Hub
           </span>
         </Link>
 
-        <CollegeSelector
-          colleges={colleges}
-          currentSlug={pathname?.split('/')[1] || ''}
-        />
+        <nav className="hidden lg:flex items-center gap-6">
+          <Link href="/search" className="flex items-center gap-2">
+            <Briefcase className="w-4 h-4" />
+            Opportunities
+          </Link>
 
-        <div className="flex items-center gap-3">
-          <Link href="/leaderboard" className="text-sm font-medium">
+          <Link href="/leaderboard" className="flex items-center gap-2">
+            <Trophy className="w-4 h-4" />
             Leaderboard
           </Link>
 
-          <Link href="/search" className="text-sm font-medium">Opportunities</Link>
-
-          <Link
-            href="/login"
-            className="text-sm font-medium text-primary"
-          >
+          <Link href="/dashboard/contribute" className="flex items-center gap-2">
+            <PlusCircle className="w-4 h-4" />
             Contribute
           </Link>
+        </nav>
 
-          {role === 'guest' && (
+        <div className="hidden lg:flex items-center gap-3">
+          {role === 'guest' ? (
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-lg border"
+                className="px-4 py-2 rounded-xl border"
               >
                 Student Login
               </Link>
 
               <Link
                 href="/admin/login"
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground"
+                className="px-4 py-2 rounded-xl bg-primary text-white"
               >
-                Admin Login
+                Admin
               </Link>
             </>
-          )}
-
-          {role !== 'guest' && (
+          ) : (
             <>
               <Link
-                href={
-                  role === 'admin'
-                    ? '/admin/dashboard'
-                    : '/dashboard'
-                }
-                className="p-2 rounded-lg border"
+                href={role === 'admin' ? '/admin/dashboard' : '/dashboard'}
+                className="p-2 rounded-xl border"
               >
                 {role === 'admin'
                   ? <Shield className="w-4 h-4" />
@@ -138,7 +113,7 @@ export function Navbar() {
 
               <a
                 href={signoutHref}
-                className="p-2 rounded-lg border"
+                className="p-2 rounded-xl border"
               >
                 <LogOut className="w-4 h-4" />
               </a>
@@ -157,8 +132,26 @@ export function Navbar() {
             </button>
           )}
         </div>
+
+        <button
+          className="lg:hidden"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen
+            ? <X className="w-6 h-6" />
+            : <Menu className="w-6 h-6" />}
+        </button>
       </div>
+
+      {menuOpen && (
+        <div className="lg:hidden border-t px-4 py-4 space-y-3">
+          <Link href="/search" className="block">Opportunities</Link>
+          <Link href="/leaderboard" className="block">Leaderboard</Link>
+          <Link href="/dashboard/contribute" className="block">Contribute</Link>
+          <Link href="/login" className="block">Student Login</Link>
+          <Link href="/admin/login" className="block">Admin Login</Link>
+        </div>
+      )}
     </header>
   );
 }
-

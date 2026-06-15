@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   createClient,
   createServiceClient,
@@ -31,11 +31,17 @@ export async function GET(request: NextRequest) {
 
   const { data } = await createServiceClient()
     .from('student_contributions')
-    .select('*')
+    .select('*, profiles(full_name, email)')
     .eq('status', status)
     .order('created_at', {
       ascending: false,
     });
 
-  return NextResponse.json(data || []);
+  const mapped = (data || []).map((item: any) => ({
+    ...item,
+    contributor_name: item.profiles?.full_name || 'Student',
+    contributor_email: item.profiles?.email || '',
+  }));
+
+  return NextResponse.json(mapped);
 }

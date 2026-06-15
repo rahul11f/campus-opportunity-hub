@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 import { chromium } from 'playwright';
-import { fetchWithSsrfProtection } from './urlExpander';
+import { fetchWithSsrfProtection, expandUrl } from './urlExpander';
 import { extractMainContent, truncateText } from './textCleaner';
 
 type ScrapeResult = {
@@ -12,6 +12,7 @@ type ScrapeResult = {
 };
 
 async function scrapeWithPlaywright(url: string): Promise<ScrapeResult> {
+  const safeUrl = await expandUrl(url);
   const browser = await chromium.launch({
     headless: true,
   });
@@ -22,7 +23,7 @@ async function scrapeWithPlaywright(url: string): Promise<ScrapeResult> {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36',
     });
 
-    await page.goto(url, {
+    await page.goto(safeUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 25000,
     });

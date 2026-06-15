@@ -56,32 +56,91 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Fetch profile to get real contributor name & email
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name,email')
+    .eq('id', contribution.user_id)
+    .maybeSingle();
+
+  const contributorName = profile?.full_name || 'Student';
+  const contributorEmail = profile?.email || '';
+
+  // Extract structured slots if present in markdown content
+  let parsedSlots: any = null;
+  const contentToSearch = content || contribution.content || '';
+  const slotsMatch = contentToSearch.match(/\[SLOTS_JSON_DATA\]([\s\S]*?)\[\/SLOTS_JSON_DATA\]/);
+  if (slotsMatch && slotsMatch[1]) {
+    try {
+      parsedSlots = JSON.parse(slotsMatch[1].trim());
+    } catch (e) {
+      console.error('Failed to parse contribution slots JSON:', e);
+    }
+  }
+
+  const deadlineVal = parsedSlots?.basic_information?.application_deadline;
+  let isoDeadline = null;
+  if (deadlineVal && deadlineVal !== 'Not Mentioned') {
+    const parsedDate = new Date(deadlineVal);
+    if (!isNaN(parsedDate.getTime())) {
+      isoDeadline = parsedDate.toISOString();
+    }
+  }
+
+  const backlogVal = parsedSlots?.eligibility?.active_backlogs_allowed;
+  const branchesVal = parsedSlots?.eligibility?.eligible_branches;
+  const cgpaVal = parsedSlots?.eligibility?.minimum_cgpa_percentage;
+  const batchVal = parsedSlots?.eligibility?.passing_batch;
+  const cutoffVal = parsedSlots?.eligibility?.cutoff_criteria;
+
   const { data: opportunity, error } =
     await supabase
       .from('opportunities')
       .insert({
         company:
-          contribution.contributor_name ||
+          parsedSlots?.basic_information?.company_name ||
+          contributorName ||
           'Student Contribution',
-        role: title || contribution.title,
+        role: parsedSlots?.job_details?.job_role || title || contribution.title,
         type:
+          parsedSlots?.basic_information?.opportunity_type ||
           contributionType ||
           contribution.contribution_type,
         instructions:
-          content || contribution.content,
+          parsedSlots?.communication?.additional_instructions ||
+          content ||
+          contribution.content,
         raw_text:
           content || contribution.content,
-        source_link: contribution.source_link,
+        source_link: parsedSlots?.basic_information?.jd_link || contribution.source_link,
         is_published: true,
         source_type: 'student',
         contribution_id: contribution.id,
-        contributor_name:
-          contribution.contributor_name,
-        contributor_email:
-          contribution.contributor_email,
+        contributor_name: contributorName,
+        contributor_email: contributorEmail,
         contributor_student_id:
           contribution.contributor_student_id,
         verified_by_admin: true,
+        salary: parsedSlots?.job_details?.salary_ctc || null,
+        location: parsedSlots?.job_details?.location || null,
+        deadline: isoDeadline,
+        venue: parsedSlots?.schedule?.venue || null,
+        interview_mode: parsedSlots?.schedule?.mode || null,
+        gender_eligibility: parsedSlots?.eligibility?.gender_eligibility || null,
+        education_qualification: parsedSlots?.eligibility?.educational_qualification || null,
+        streams_specialization: parsedSlots?.eligibility?.eligible_streams || null,
+        eligibility: {
+          branches: branchesVal ? [branchesVal] : [],
+          cgpa: cgpaVal || '',
+          backlog: backlogVal || '',
+          batch: batchVal || '',
+          other: cutoffVal || '',
+          ...parsedSlots?.eligibility
+        },
+        interview_process: parsedSlots?.recruitment_process ? {
+          rounds: isNaN(Number(parsedSlots.recruitment_process.number_of_rounds)) ? null : Number(parsedSlots.recruitment_process.number_of_rounds),
+          description: [parsedSlots.recruitment_process.hiring_process]
+        } : null
       })
       .select()
       .single();

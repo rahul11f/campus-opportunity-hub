@@ -19,11 +19,20 @@ interface AdSlotProps {
 export function AdSlot({ position, className = '' }: AdSlotProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [adsEnabled, setAdsEnabled] = useState(false);
   const isProduction = process.env.NODE_ENV === 'production';
   const adClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
   useEffect(() => {
-    if (!ref.current) return;
+    fetch('/api/admin/settings').then(res => res.json()).then(data => {
+      if (data.enableAds) {
+        setAdsEnabled(true);
+      }
+    }).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!ref.current || !adsEnabled) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -37,7 +46,9 @@ export function AdSlot({ position, className = '' }: AdSlotProps) {
 
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [adsEnabled]);
+
+  if (!adsEnabled) return null;
 
   return (
     <div ref={ref} className={`w-full ${className}`}>

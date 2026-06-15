@@ -7,6 +7,7 @@ import type {
   ExtractedOpportunity,
   OpportunityType,
 } from '@/types/opportunity';
+import { AdvancedSlotsAccordion } from './AdvancedSlotsAccordion';
 
 type Props = {
   initialData?: Partial<ExtractedOpportunity> | null;
@@ -59,46 +60,81 @@ export function OpportunityForm({
   const [respInput, setRespInput] =
     useState('');
 
+  // Robust helper to support old flat data and new 8-section Gemini structures
+  const companyVal = initialData?.company || (initialData as any)?.basic_information?.company_name || '';
+  const roleVal = initialData?.role || (initialData as any)?.job_details?.job_role || '';
+  const typeVal = initialData?.type || (initialData as any)?.basic_information?.opportunity_type || 'placement';
+  const salaryVal = initialData?.salary || (initialData as any)?.job_details?.salary_ctc || '';
+  const locationVal = initialData?.location || (initialData as any)?.job_details?.location || '';
+  const applyLinkVal = initialData?.apply_link || (initialData as any)?.basic_information?.jd_link || (initialData as any)?.attachments?.jd_link || '';
+  const instructionsVal = initialData?.instructions || (initialData as any)?.communication?.additional_instructions || '';
+  const deadlineVal = toLocalDateTime(initialData?.deadline || (initialData as any)?.basic_information?.application_deadline);
+
+  const initialEligibility = initialData?.eligibility || {};
+  const initialBranches = (initialEligibility as any).branches || ((initialEligibility as any).eligible_branches ? [(initialEligibility as any).eligible_branches] : []);
+  const initialCgpa = (initialEligibility as any).cgpa || (initialEligibility as any).minimum_cgpa_percentage || '';
+  const initialBacklog = (initialEligibility as any).backlog || (initialEligibility as any).active_backlogs_allowed || '';
+  const initialBatch = (initialEligibility as any).batch || (initialEligibility as any).passing_batch || '';
+  const initialOther = (initialEligibility as any).other || (initialEligibility as any).cutoff_criteria || '';
+
   const [form, setForm] = useState({
-    company: initialData?.company || '',
-    role: initialData?.role || '',
-    type: initialData?.type || 'placement',
-    salary: initialData?.salary || '',
-    location: initialData?.location || '',
-    apply_link: initialData?.apply_link || '',
+    company: companyVal,
+    role: roleVal,
+    type: typeVal as any,
+    salary: salaryVal,
+    location: locationVal,
+    apply_link: applyLinkVal,
     source_link: sourceLink || '',
-    instructions:
-      initialData?.instructions || '',
-    deadline: toLocalDateTime(
-      initialData?.deadline
-    ),
+    instructions: instructionsVal,
+    deadline: deadlineVal,
     featured: false,
     is_published: false,
     skills: initialData?.skills || [],
-    responsibilities:
-      initialData?.responsibilities || [],
+    responsibilities: initialData?.responsibilities || [],
     tags: initialData?.tags || [],
     eligibility: {
-      branches:
-        initialData?.eligibility?.branches ||
-        [],
-      cgpa:
-        initialData?.eligibility?.cgpa || '',
-      backlog:
-        initialData?.eligibility?.backlog ||
-        '',
-      batch:
-        initialData?.eligibility?.batch || '',
-      other:
-        initialData?.eligibility?.other || '',
+      branches: initialBranches,
+      cgpa: initialCgpa,
+      backlog: initialBacklog,
+      batch: initialBatch,
+      other: initialOther,
+      company_logo: (initialData as any)?.basic_information?.company_logo || '',
+      round_name: (initialData as any)?.basic_information?.round_name || '',
+      verified_status: (initialData as any)?.basic_information?.verified_status || '',
+      educational_qualification: (initialEligibility as any).educational_qualification || (initialEligibility as any).education_qualification || '',
+      eligible_branches: (initialEligibility as any).eligible_branches || '',
+      eligible_streams: (initialEligibility as any).eligible_streams || '',
+      passing_batch: (initialEligibility as any).passing_batch || '',
+      minimum_cgpa_percentage: (initialEligibility as any).minimum_cgpa_percentage || '',
+      cutoff_criteria: (initialEligibility as any).cutoff_criteria || '',
+      active_backlogs_allowed: (initialEligibility as any).active_backlogs_allowed || '',
+      gender_eligibility: (initialEligibility as any).gender_eligibility || '',
+      job_role: (initialData as any)?.job_details?.job_role || '',
+      salary_ctc: (initialData as any)?.job_details?.salary_ctc || '',
+      stipend: (initialData as any)?.job_details?.stipend || '',
+      work_mode: (initialData as any)?.job_details?.work_mode || '',
+      employment_type: (initialData as any)?.job_details?.employment_type || '',
+      hiring_process: (initialData as any)?.recruitment_process?.hiring_process || '',
+      number_of_rounds: (initialData as any)?.recruitment_process?.number_of_rounds || '',
+      elimination_rounds: (initialData as any)?.recruitment_process?.elimination_rounds || '',
+      event_date: (initialData as any)?.schedule?.event_date || '',
+      time: (initialData as any)?.schedule?.time || '',
+      venue: (initialData as any)?.schedule?.venue || '',
+      mode: (initialData as any)?.schedule?.mode || '',
+      communication_channel: (initialData as any)?.communication?.communication_channel || '',
+      check_inbox: (initialData as any)?.communication?.check_inbox || '',
+      check_spam_folder: (initialData as any)?.communication?.check_spam_folder || '',
+      timing_shared_by: (initialData as any)?.communication?.timing_shared_by || '',
+      student_eligible_list: (initialData as any)?.attachments?.student_eligible_list || '',
+      additional_documents: (initialData as any)?.attachments?.additional_documents || '',
+      issued_by: (initialData as any)?.source_metadata?.issued_by || '',
+      institution: (initialData as any)?.source_metadata?.institution || '',
+      reminder_notice: (initialData as any)?.source_metadata?.reminder_notice || '',
+      notice_type: (initialData as any)?.source_metadata?.notice_type || '',
     },
     interview_process: {
-      rounds:
-        initialData?.interview_process
-          ?.rounds || null,
-      description:
-        initialData?.interview_process
-          ?.description || [],
+      rounds: initialData?.interview_process?.rounds || null,
+      description: initialData?.interview_process?.description || [],
     },
     raw_text: rawText,
   });
@@ -114,6 +150,8 @@ export function OpportunityForm({
     }),
     [form]
   );
+
+
 
   async function submit(
     isPublished: boolean
@@ -373,6 +411,9 @@ export function OpportunityForm({
             Publish
           </button>
         </div>
+
+        <AdvancedSlotsAccordion form={form} setForm={setForm} />
+
       </div>
 
       <div className="border rounded-2xl p-5">
