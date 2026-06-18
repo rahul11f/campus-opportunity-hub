@@ -8,7 +8,7 @@ A platform to help students find and share campus opportunities, internships, an
 - Easy to set up and run locally.
 
 ## 🚀 Live Demo
-Check out the live version here: [Live Demo](https://rahul11f.github.io/campus-opportunity-hub)
+Check out the live version here: [Live Demo](https://campus-opportunity-hub-iota.vercel.app)
 
 ## 🛠️ Installation & Setup
 
