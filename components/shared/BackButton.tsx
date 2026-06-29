@@ -21,10 +21,10 @@ export function BackButton({ fallbackUrl = '/search', className = '' }: { fallba
   return (
     <button
       onClick={handleBack}
-      className={`flex items-center gap-2 px-4 py-3 rounded-xl border bg-card text-sm font-medium hover:bg-accent transition-colors shadow-sm ${className}`}
+      className={`group flex items-center gap-2 px-4 py-2.5 rounded-full border border-white/10 bg-background/50 backdrop-blur-md text-sm font-semibold hover:bg-white/5 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${className}`}
     >
-      <ArrowLeft className="w-4 h-4" />
-      Back
+      <ArrowLeft className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors group-hover:-translate-x-1 duration-300" />
+      <span className="text-foreground">Back</span>
     </button>
   );
 }

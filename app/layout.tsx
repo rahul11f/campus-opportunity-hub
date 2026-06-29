@@ -37,6 +37,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { CommandMenu } from '@/components/shared/CommandMenu';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -56,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <MobileNav />
           </div>
+          <CommandMenu />
           <Toaster position="bottom-right" richColors />
           <InstallPrompt />
         </ThemeProvider>

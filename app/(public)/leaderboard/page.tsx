@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { Trophy, Medal, Crown } from 'lucide-react';
+import { BackButton } from '@/components/shared/BackButton';
 
 async function getLeaderboard() {
   const supabase = createServiceClient();
@@ -40,6 +41,11 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+      <div className="flex items-center gap-4">
+        <BackButton fallbackUrl="/" />
+        <h2 className="text-xl font-bold">Back to Platform</h2>
+      </div>
+
       <div className="rounded-3xl border bg-card p-10 text-center">
         <Crown className="mx-auto w-12 h-12 mb-4 text-yellow-400" />
 

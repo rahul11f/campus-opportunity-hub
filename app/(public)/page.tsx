@@ -18,17 +18,20 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import { HeroSection } from '@/components/shared/HeroSection';
+
 export const revalidate = 60;
 
 async function getData() {
   const supabase = createServiceClient();
+  const now = new Date().toISOString();
   const [featured, latest, urgent, leaders, studentsRes, totalOps] = await Promise.all([
-    supabase.from('opportunities').select('*').eq('is_published', true).eq('featured', true).eq('is_expired', false).limit(6),
-    supabase.from('opportunities').select('*').eq('is_published', true).eq('is_expired', false).order('created_at', { ascending: false }).limit(9),
-    supabase.from('opportunities').select('*').eq('is_published', true).eq('is_expired', false).not('deadline', 'is', null).order('deadline', { ascending: true }).limit(4),
+    supabase.from('opportunities').select('*').eq('is_published', true).eq('featured', true).eq('is_expired', false).or(`deadline.gte.${now},deadline.is.null`).limit(6),
+    supabase.from('opportunities').select('*').eq('is_published', true).eq('is_expired', false).or(`deadline.gte.${now},deadline.is.null`).order('created_at', { ascending: false }).limit(9),
+    supabase.from('opportunities').select('*').eq('is_published', true).eq('is_expired', false).not('deadline', 'is', null).gte('deadline', now).order('deadline', { ascending: true }).limit(4),
     supabase.from('student_points').select('*').order('total_points', { ascending: false }).limit(3),
     supabase.from('student_profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('opportunities').select('*', { count: 'exact', head: true }).eq('is_published', true).eq('is_expired', false),
+    supabase.from('opportunities').select('*', { count: 'exact', head: true }).eq('is_published', true).eq('is_expired', false).or(`deadline.gte.${now},deadline.is.null`),
   ]);
 
   return {
@@ -89,56 +92,11 @@ export default async function HomePage() {
   return (
     <div className="space-y-24 pb-24 selection:bg-primary selection:text-primary-foreground">
       {/* ── Hero ── */}
-      <section className="relative pt-32 pb-20 overflow-hidden border-b border-border/40">
-        {/* Subtle grid background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50" />
-
-        <div className="relative max-w-7xl mx-auto px-6 text-center z-10">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-background/50 backdrop-blur-sm text-sm font-medium mb-8 hover:bg-muted/50 transition-colors cursor-pointer shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-muted-foreground">Now tracking <span className="text-foreground font-semibold">{data.totalOps}</span> opportunities</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-foreground mb-6 max-w-4xl mx-auto">
-            Find Opportunities{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground">
-              Before Everyone Else.
-            </span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-10 leading-relaxed font-medium">
-            The definitive platform for campus placements, internships, and hackathons. 
-            Sourced from the community, verified by admins, built for serious students.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link
-              href="/search"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_4px_14px_rgba(255,255,255,0.1)] text-sm"
-            >
-              Start Exploring
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/dashboard/contribute"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full border border-border bg-background hover:bg-muted font-medium transition-all text-sm shadow-sm"
-            >
-              Post an Opportunity
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center justify-center gap-8 md:gap-16 flex-wrap pt-8 border-t border-border/50">
-            <StatPill value={data.students} label="Active Students" />
-            <StatPill value={data.totalOps} label="Live Opportunities" />
-            <StatPill value={data.featured.length} label="Featured Jobs" />
-          </div>
-        </div>
-      </section>
+      <HeroSection 
+        totalOps={data.totalOps} 
+        students={data.students} 
+        featuredCount={data.featured.length} 
+      />
 
       {/* ── Category Quick Filters ── */}
       <section className="max-w-7xl mx-auto px-6">

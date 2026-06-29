@@ -5,25 +5,62 @@ import {
   Briefcase,
   MapPin,
   IndianRupee,
-  GraduationCap,
   Building2,
-  ShieldCheck,
-  Star,
-  Clock3,
+  Clock,
+  ArrowRight,
+  GraduationCap
 } from 'lucide-react';
-import { StudentOpportunityActions } from '@/components/auth/StudentOpportunityActions';
+import { useEffect, useState } from 'react';
 
-function deadlineLabel(deadline?: string | null) {
-  if (!deadline) return 'Open';
+function CountdownTimer({ deadline }: { deadline: string | null }) {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number } | null>(null);
 
-  const diff = Math.ceil(
-    (new Date(deadline).getTime() - Date.now()) /
-    (1000 * 60 * 60 * 24)
+  useEffect(() => {
+    if (!deadline) return;
+    
+    const calculateTimeLeft = () => {
+      const difference = new Date(deadline).getTime() - new Date().getTime();
+      
+      if (difference <= 0) {
+        return { days: 0, hours: 0, minutes: 0 };
+      }
+
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [deadline]);
+
+  if (!deadline) {
+    return <span className="text-emerald-600 dark:text-emerald-400 font-medium">Open Always</span>;
+  }
+
+  if (!timeLeft) return null; // initial render
+
+  if (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0) {
+    return <span className="text-red-500 font-medium">Expired</span>;
+  }
+
+  const isUrgent = timeLeft.days < 3;
+
+  return (
+    <div className={`flex items-center gap-1.5 font-medium ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-muted-foreground'}`}>
+      <Clock className="w-4 h-4" />
+      <span>
+        {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
+        {timeLeft.hours}h left
+      </span>
+    </div>
   );
-
-  if (diff < 0) return 'Expired';
-  if (diff === 0) return 'Ends today';
-  return `${diff} days left`;
 }
 
 export function OpportunityCard({
@@ -32,116 +69,81 @@ export function OpportunityCard({
   opportunity: any;
 }) {
   return (
-    <div className="opportunity-card group overflow-hidden">
-      <div className="p-5 space-y-4">
-        <div className="flex justify-between gap-3">
-          <div className="flex gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl border bg-background shadow-sm flex items-center justify-center shrink-0">
-              {opportunity.company_logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={opportunity.company_logo}
-                  alt={opportunity.company}
-                  className="w-8 h-8 object-contain"
-                />
-              ) : (
-                <Building2 className="w-5 h-5 text-muted-foreground" />
-              )}
-            </div>
-
-            <div className="min-w-0">
-              <Link
-                href={`/opportunities/${opportunity.id}`}
-                className="text-lg font-bold tracking-tight text-foreground hover:text-primary transition-colors line-clamp-2"
-              >
-                {opportunity.role}
-              </Link>
-
-              <p className="text-sm font-medium text-muted-foreground truncate mt-0.5">
-                {opportunity.company}
-              </p>
-            </div>
-          </div>
-
-          {opportunity.featured && (
-            <span className="px-2.5 py-1 rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium text-[11px] uppercase tracking-wider flex items-center gap-1 h-fit shrink-0">
-              <Star className="w-3 h-3 fill-amber-500/50" />
-              Featured
-            </span>
+    <div className="group flex flex-col bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      
+      {/* Header section */}
+      <div className="p-6 pb-4 flex gap-4">
+        <div className="w-12 h-12 rounded-lg border border-slate-100 dark:border-border bg-slate-50 dark:bg-background flex items-center justify-center shrink-0 p-1">
+          {opportunity.company_logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={opportunity.company_logo}
+              alt={opportunity.company}
+              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
+            />
+          ) : (
+            <Building2 className="w-6 h-6 text-slate-400" />
           )}
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Chip icon={<Briefcase className="w-3 h-3" />}>
-            {opportunity.type || 'Opportunity'}
-          </Chip>
-
-          <Chip icon={<MapPin className="w-3 h-3" />}>
-            {opportunity.location || 'TBD'}
-          </Chip>
-
-          <Chip icon={<IndianRupee className="w-3 h-3" />}>
-            {opportunity.salary || 'TBD'}
-          </Chip>
-
-          <Chip icon={<Clock3 className="w-3 h-3" />}>
-            {deadlineLabel(opportunity.deadline)}
-          </Chip>
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/opportunities/${opportunity.id}`}
+            className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors"
+          >
+            {opportunity.role}
+          </Link>
+          <div className="text-sm font-medium text-slate-500 dark:text-muted-foreground mt-0.5">
+            {opportunity.company}
+          </div>
         </div>
+      </div>
 
-        {opportunity.eligibility && (
-          <div className="rounded-xl border bg-card p-3">
-            <div className="flex items-center gap-2 mb-2 font-medium text-sm">
-              <GraduationCap className="w-4 h-4" />
-              Eligibility
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {opportunity.eligibility.cgpa && (
-                <MiniChip>CGPA {opportunity.eligibility.cgpa}</MiniChip>
-              )}
-
-              {opportunity.eligibility.batch && (
-                <MiniChip>Batch {opportunity.eligibility.batch}</MiniChip>
-              )}
-            </div>
-          </div>
+      {/* Tags section */}
+      <div className="px-6 pb-6 flex flex-wrap gap-2 flex-1">
+        <Chip icon={<Briefcase className="w-3.5 h-3.5" />}>
+          {opportunity.type || 'Role'}
+        </Chip>
+        <Chip icon={<MapPin className="w-3.5 h-3.5" />}>
+          {opportunity.location || 'Remote'}
+        </Chip>
+        {opportunity.salary && (
+          <Chip icon={<IndianRupee className="w-3.5 h-3.5" />}>
+            {opportunity.salary}
+          </Chip>
         )}
-
-        {opportunity.source_type === 'student' && (
-          <div className="rounded-xl border p-3 bg-green-500/5 text-sm">
-            <div className="flex items-center gap-2 text-green-400">
-              <ShieldCheck className="w-4 h-4" />
-              Student Verified
-            </div>
-          </div>
+        {opportunity.eligibility?.cgpa && (
+          <Chip icon={<GraduationCap className="w-3.5 h-3.5" />}>
+            {opportunity.eligibility.cgpa} CGPA+
+          </Chip>
         )}
+      </div>
 
-        <StudentOpportunityActions
-          opportunityId={opportunity.id}
-          applyLink={
-            opportunity.apply_link ||
-            opportunity.registration_link ||
-            opportunity.source_link
-          }
-        />
+      {/* Footer section */}
+      <div className="px-6 py-4 bg-slate-50 dark:bg-muted/50 border-t border-slate-100 dark:border-border flex items-center justify-between text-sm">
+        <CountdownTimer deadline={opportunity.deadline} />
+        
+        <Link
+          href={`/opportunities/${opportunity.id}`}
+          className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
+        >
+          View Details
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </div>
   );
 }
 
-function Chip({ children, icon }: any) {
+function Chip({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="px-2.5 py-1 rounded-md border bg-card shadow-sm text-xs font-semibold text-foreground/80 flex items-center gap-1.5 transition-colors group-hover:border-border">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white dark:bg-background text-xs font-semibold text-slate-600 dark:text-muted-foreground border border-slate-200 dark:border-border">
       {icon}
-      {children}
-    </span>
-  );
-}
-
-function MiniChip({ children }: any) {
-  return (
-    <span className="px-2 py-0.5 rounded-md border bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 text-xs font-semibold">
       {children}
     </span>
   );
@@ -149,6 +151,6 @@ function MiniChip({ children }: any) {
 
 export function OpportunityCardSkeleton() {
   return (
-    <div className="rounded-2xl border bg-card h-[320px] animate-pulse" />
+    <div className="rounded-xl border border-slate-200 bg-white h-[240px] animate-pulse" />
   );
 }

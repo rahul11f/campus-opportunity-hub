@@ -14,6 +14,7 @@ import {
   Trophy,
   Briefcase,
   PlusCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -57,14 +58,14 @@ export function Navbar() {
       : '/api/auth/signout?redirect=/login';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 lg:hidden">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-          <div className="bg-primary/10 p-1.5 rounded-lg border border-primary/20">
-            <GraduationCap className="w-5 h-5 text-primary" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_10px_rgba(var(--primary),0.3)] border border-white/20">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold tracking-tight text-sm md:text-base">
-            Campus Hub
+          <span className="font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            CampusHub
           </span>
         </Link>
 
@@ -79,7 +80,7 @@ export function Navbar() {
             Leaderboard
           </Link>
 
-          <Link href="/dashboard/contribute" className="flex items-center gap-2 hover:text-foreground transition-colors">
+          <Link href="/contribute" className="flex items-center gap-2 hover:text-foreground transition-colors">
             <PlusCircle className="w-4 h-4" />
             Contribute
           </Link>

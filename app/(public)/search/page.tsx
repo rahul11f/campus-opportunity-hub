@@ -25,7 +25,8 @@ async function getResults(searchParams: Record<string, string | undefined>) {
     .from('opportunities')
     .select('*', { count: 'exact' })
     .eq('is_published', true)
-    .eq('is_expired', false);
+    .eq('is_expired', false)
+    .or(`deadline.gte.${new Date().toISOString()},deadline.is.null`);
 
   if (q) query = query.or(`role.ilike.%${q}%,company.ilike.%${q}%,location.ilike.%${q}%`);
   if (type) query = query.eq('type', type);

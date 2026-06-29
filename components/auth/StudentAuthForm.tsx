@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { GraduationCap, ArrowLeft, Github, Linkedin } from 'lucide-react';
+import { ArrowLeft, Github, Linkedin, Sparkles, Mail, Lock, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -15,75 +15,91 @@ const GoogleIcon = () => (
   </svg>
 );
 
+type AuthMode = 'login' | 'signup' | 'forgot-password' | 'otp';
+
 export function StudentAuthForm() {
   const supabase = createClient();
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+
+  const validate = () => {
+    const errors: { email?: string; password?: string } = {};
+    if (!email) errors.email = 'Email is required';
+    else if (!/\\S+@\\S+\\.\\S+/.test(email)) errors.email = 'Invalid email address';
+    
+    if (mode === 'login' || mode === 'signup') {
+      if (!password) errors.password = 'Password is required';
+      else if (password.length < 6) errors.password = 'Password must be at least 6 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   async function handleOAuthLogin(provider: 'google' | 'linkedin_oidc' | 'github') {
     setLoading(true);
+    setFieldErrors({});
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-
       if (error) throw error;
     } catch (err: any) {
-      toast.error(err.message || 'OAuth login failed');
+      setFieldErrors({ general: err.message || 'OAuth login failed' });
       setLoading(false);
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validate()) return;
+    
     setLoading(true);
+    setFieldErrors({});
 
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) {
-          toast.error(error.message);
+          setFieldErrors({ general: error.message });
           return;
         }
-
         if (data.user) {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            full_name: fullName,
-            email,
-          });
-
-          await supabase.from('student_profiles').upsert({
-            user_id: data.user.id,
-            full_name: fullName,
-            email,
-          });
+          await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName, email });
+          await supabase.from('student_profiles').upsert({ user_id: data.user.id, full_name: fullName, email });
         }
-
         toast.success('Check your email for the verification link.');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
+      } 
+      else if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          toast.error(error.message);
+          if (error.message.toLowerCase().includes('password')) setFieldErrors({ password: 'Invalid password' });
+          else setFieldErrors({ general: error.message });
           return;
         }
-
         window.location.href = '/dashboard';
+      }
+      else if (mode === 'otp') {
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } });
+        if (error) {
+          setFieldErrors({ general: error.message });
+          return;
+        }
+        toast.success('Magic link sent to your email!');
+      }
+      else if (mode === 'forgot-password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/update-password` });
+        if (error) {
+          setFieldErrors({ general: error.message });
+          return;
+        }
+        toast.success('Password reset link sent to your email!');
       }
     } finally {
       setLoading(false);
@@ -96,119 +112,153 @@ export function StudentAuthForm() {
         <ArrowLeft className="w-4 h-4" /> Back to Website
       </Link>
       
-      <div className="w-full max-w-md rounded-3xl border bg-card p-8 shadow-xl">
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <GraduationCap className="w-7 h-7 text-primary-foreground" />
+      <div className="w-full max-w-md rounded-[2rem] border bg-card/50 backdrop-blur-xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        
+        <div className="text-center mb-10">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.4)] border border-white/20 mb-6">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-
-          <h1 className="text-2xl font-bold tracking-tight">
-            {mode === 'login' ? 'Welcome Back' : 'Create an Account'}
+          <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'otp' ? 'Magic Link' : 'Reset Password'}
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {mode === 'login' ? 'Login to continue to your dashboard' : 'Join the campus network today'}
+          <p className="text-sm text-muted-foreground font-medium">
+            {mode === 'login' || mode === 'signup' 
+              ? 'Join the premium campus network' 
+              : mode === 'otp' 
+                ? 'Sign in securely without a password' 
+                : 'We will send you a reset link'}
           </p>
         </div>
 
-        {/* OAuth Buttons */}
-        <div className="space-y-3 mb-8">
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin('google')}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-background border hover:bg-muted text-foreground py-2.5 px-4 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin('linkedin_oidc')}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-[#0A66C2] hover:bg-[#004182] text-white py-2.5 px-4 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
-          >
-            <Linkedin className="w-5 h-5 fill-white" />
-            Continue with LinkedIn
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin('github')}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-[#24292e] hover:bg-[#1b1f23] text-white py-2.5 px-4 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
-          >
-            <Github className="w-5 h-5 fill-white" />
-            Continue with GitHub
-          </button>
-        </div>
-
-        {/* Divider */}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
+        {fieldErrors.general && (
+          <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold flex items-center justify-center text-center">
+            {fieldErrors.general}
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-3 text-muted-foreground font-medium">Or continue with email</span>
-          </div>
-        </div>
+        )}
 
-        {/* Email/Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {mode === 'signup' && (
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase ml-1">Full Name</label>
-              <input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
-                required
-                className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-              />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Full Name</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none"
+                  placeholder="John Doe"
+                />
+              </div>
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase ml-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email</label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFieldErrors({ ...fieldErrors, email: undefined, general: undefined });
+                }}
+                className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.email ? 'border-destructive focus:ring-destructive/50' : ''}`}
+                placeholder="you@university.edu"
+              />
+              <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            </div>
+            {fieldErrors.email && <p className="text-destructive text-xs font-bold ml-1 mt-1">{fieldErrors.email}</p>}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase ml-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            />
-          </div>
+          {(mode === 'login' || mode === 'signup') && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Password</label>
+                {mode === 'login' && (
+                  <button type="button" onClick={() => { setMode('forgot-password'); setFieldErrors({}); }} className="text-xs font-bold text-primary hover:underline">
+                    Forgot?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors({ ...fieldErrors, password: undefined, general: undefined });
+                  }}
+                  className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.password ? 'border-destructive focus:ring-destructive/50' : ''}`}
+                  placeholder="••••••••"
+                />
+                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              </div>
+              {fieldErrors.password && <p className="text-destructive text-xs font-bold ml-1 mt-1">{fieldErrors.password}</p>}
+            </div>
+          )}
 
           <button
+            type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-xl font-semibold transition-colors shadow-sm disabled:opacity-50 mt-2"
+            className="w-full flex items-center justify-center py-3.5 rounded-xl bg-foreground text-background font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg mt-2"
           >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create Account'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'otp' ? 'Send Magic Link' : 'Send Reset Link'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-sm text-muted-foreground hover:text-foreground font-medium transition-colors"
-          >
-            {mode === 'login'
-              ? "Don't have an account? Sign up"
-              : 'Already have an account? Sign in'}
-          </button>
+        {(mode === 'login' || mode === 'signup') && (
+          <>
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs font-bold uppercase tracking-wider">
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin('google')}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border bg-background/50 hover:bg-muted font-semibold text-sm transition-all shadow-sm"
+              >
+                <GoogleIcon /> Google
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin('github')}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border bg-background/50 hover:bg-muted font-semibold text-sm transition-all shadow-sm"
+              >
+                <Github className="w-5 h-5" /> GitHub
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className="mt-8 text-center text-sm font-medium text-muted-foreground flex flex-col gap-2">
+          {mode === 'login' ? (
+            <>
+              <p>
+                Don't have an account?{' '}
+                <button type="button" onClick={() => { setMode('signup'); setFieldErrors({}); }} className="text-foreground font-bold hover:underline decoration-primary">
+                  Sign up
+                </button>
+              </p>
+              <button type="button" onClick={() => { setMode('otp'); setFieldErrors({}); }} className="text-primary font-bold hover:underline flex items-center justify-center gap-1 mx-auto mt-2">
+                <KeyRound className="w-4 h-4" /> Login with Magic Link
+              </button>
+            </>
+          ) : (
+            <p>
+              Back to{' '}
+              <button type="button" onClick={() => { setMode('login'); setFieldErrors({}); }} className="text-foreground font-bold hover:underline decoration-primary">
+                Login
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

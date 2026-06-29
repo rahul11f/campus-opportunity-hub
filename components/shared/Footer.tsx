@@ -1,6 +1,6 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import {
-  GraduationCap,
+  Sparkles,
   Mail,
   Building2,
   Linkedin,
@@ -11,107 +11,101 @@ import {
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-muted/30 mt-20">
-      <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid md:grid-cols-4 gap-10 text-center md:text-left">
-          <div className="flex flex-col items-center md:items-start">
-            <Link
-              href="/"
-              className="flex items-center gap-3 mb-5"
-            >
-              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-
-              <div>
-                <span className="font-bold block">
-                  Campus Opportunity Hub
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Student-first platform
-                </span>
-              </div>
-            </Link>
-
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Placements, internships, academic notices,
-              results, deadlines, eligibility tools,
-              and student productivity in one unified platform.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4">
-              Opportunities
-            </h4>
-
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <Link href="/search" className="block">All Opportunities</Link>
-              <Link href="/search?type=placement" className="block">Placements</Link>
-              <Link href="/search?type=internship" className="block">Internships</Link>
-              <Link href="/leaderboard" className="block">Leaderboard</Link>
+    <footer className="relative border-t border-white/5 bg-background overflow-hidden mt-12">
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+      <div className="max-w-7xl mx-auto px-6 py-10 relative z-10">
+        
+        <div className="flex flex-col items-center text-center mb-10">
+          <Link href="/" className="group flex flex-col items-center gap-3 mb-4">
+            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.3)] border border-white/20 transition-transform group-hover:scale-110">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4">
-              Company
-            </h4>
-
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <Link href="/about" className="block">About</Link>
-              <Link href="/support" className="block">Support</Link>
-              <Link href="/privacy" className="block">Privacy Policy</Link>
-              <Link href="/terms" className="block">Terms of Use</Link>
+            <div>
+              <span className="text-xl font-black tracking-tight block bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                CampusHub
+              </span>
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-widest mt-0.5 block">
+                Premium Student Network
+              </span>
             </div>
-          </div>
+          </Link>
 
-          <div>
-            <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-primary" />
-              <h4 className="font-semibold">
-                Connect
-              </h4>
-            </div>
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-md mx-auto">
+            The definitive platform for campus placements, internships, hackathons, and scholarships. Built for students, verified by community.
+          </p>
 
-            <div className="flex justify-center md:justify-start gap-3 mb-5">
-              <a href="#" className="p-2 border rounded-xl hover:bg-accent">
-                <Linkedin className="w-4 h-4" />
-              </a>
-
-              <a href="#" className="p-2 border rounded-xl hover:bg-accent">
-                <Github className="w-4 h-4" />
-              </a>
-
-              <a href="#" className="p-2 border rounded-xl hover:bg-accent">
-                <Instagram className="w-4 h-4" />
-              </a>
-
-              <a href="#" className="p-2 border rounded-xl hover:bg-accent">
-                <Twitter className="w-4 h-4" />
-              </a>
-            </div>
-
-            <a
-              href="mailto:hello@campusopportunityhub.in"
-              className="flex items-center justify-center md:justify-start gap-2 text-sm"
-            >
-              <Mail className="w-4 h-4" />
-              hello@campusopportunityhub.in
-            </a>
+          <div className="flex items-center gap-4 mt-6">
+            <SocialLink href="#" icon={<Linkedin className="w-4 h-4" />} />
+            <SocialLink href="#" icon={<Github className="w-4 h-4" />} />
+            <SocialLink href="#" icon={<Instagram className="w-4 h-4" />} />
+            <SocialLink href="#" icon={<Twitter className="w-4 h-4" />} />
           </div>
         </div>
 
-        <div className="border-t border-border mt-12 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground text-center">
-          <span>
-            © {new Date().getFullYear()} Campus Opportunity Hub
-          </span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center max-w-4xl mx-auto border-t border-white/5 pt-8">
+          
+          <div className="flex flex-col items-center">
+            <h4 className="font-bold text-foreground mb-3 uppercase tracking-wider text-xs">Platform</h4>
+            <div className="space-y-2.5 text-xs font-medium text-muted-foreground flex flex-col items-center">
+              <FooterLink href="/search">Explore Jobs</FooterLink>
+              <FooterLink href="/leaderboard">Leaderboard</FooterLink>
+              <FooterLink href="/contribute">Contribute</FooterLink>
+            </div>
+          </div>
 
-          <span>
-            Built for students • Next.js + Supabase
-          </span>
+          <div className="flex flex-col items-center">
+            <h4 className="font-bold text-foreground mb-3 uppercase tracking-wider text-xs">Categories</h4>
+            <div className="space-y-2.5 text-xs font-medium text-muted-foreground flex flex-col items-center">
+              <FooterLink href="/search?type=placement">Placements</FooterLink>
+              <FooterLink href="/search?type=internship">Internships</FooterLink>
+              <FooterLink href="/search?type=hackathon">Hackathons</FooterLink>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <h4 className="font-bold text-foreground mb-3 uppercase tracking-wider text-xs">Company</h4>
+            <div className="space-y-2.5 text-xs font-medium text-muted-foreground flex flex-col items-center">
+              <FooterLink href="/about">About Us</FooterLink>
+              <FooterLink href="/support">Help Center</FooterLink>
+              <FooterLink href="/contact">Contact</FooterLink>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <h4 className="font-bold text-foreground mb-3 uppercase tracking-wider text-xs">Legal</h4>
+            <div className="space-y-2.5 text-xs font-medium text-muted-foreground flex flex-col items-center">
+              <FooterLink href="/privacy">Privacy Policy</FooterLink>
+              <FooterLink href="/terms">Terms of Service</FooterLink>
+              <FooterLink href="/cookies">Cookie Policy</FooterLink>
+            </div>
+          </div>
+
+        </div>
+
+        <div className="mt-10 text-center text-[11px] text-muted-foreground flex flex-col md:flex-row items-center justify-center gap-2 border-t border-white/5 pt-6">
+          <Building2 className="w-4 h-4" />
+          <p>© {new Date().getFullYear()} Campus Opportunity Hub. All rights reserved.</p>
         </div>
       </div>
     </footer>
+  );
+}
+
+function SocialLink({ href, icon }: { href: string; icon: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all hover:scale-110"
+    >
+      {icon}
+    </a>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="hover:text-foreground hover:underline decoration-primary/50 underline-offset-4 transition-all">
+      {children}
+    </Link>
   );
 }

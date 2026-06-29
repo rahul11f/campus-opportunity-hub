@@ -3,11 +3,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Save, User, GraduationCap, BookOpen, AlertCircle } from 'lucide-react';
+import { Save, User, GraduationCap, AlertCircle, Sparkles, Target, BookOpen, Briefcase } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const BRANCHES = [
   'CSE','IT','ECE','EEE','ME','CE','CHE','BIO','MATH','PHY','MBA','MCA','Other',
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+};
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>({});
@@ -65,126 +81,160 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 max-w-3xl mx-auto">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-14 bg-muted rounded-xl animate-pulse" />
+          <div key={i} className="h-24 bg-muted/50 rounded-2xl animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">My Profile</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Keep your profile updated for accurate AI eligibility checks
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="p-4 md:p-8 max-w-4xl mx-auto space-y-8 pb-32"
+    >
+      <motion.div variants={itemVariants} className="relative z-10">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-blue-500/20 to-purple-500/20 blur-3xl -z-10 rounded-full" />
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+          Student Profile
+        </h1>
+        <p className="text-muted-foreground mt-2 text-sm md:text-base flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          Complete your profile to unlock personalized AI matches.
         </p>
-      </div>
+      </motion.div>
 
       {/* Avatar / Account */}
-      <div className="rounded-xl border bg-card p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold shrink-0">
-          {(profile.full_name || userEmail)?.charAt(0)?.toUpperCase() || 'S'}
+      <motion.div variants={itemVariants} className="group relative overflow-hidden rounded-3xl border border-white/10 bg-background/50 backdrop-blur-xl p-6 shadow-2xl transition-all hover:shadow-primary/5 hover:border-primary/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="relative flex items-center gap-6">
+          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-primary-foreground text-3xl font-black shadow-inner border-4 border-background shrink-0">
+            {(profile.full_name || userEmail)?.charAt(0)?.toUpperCase() || 'S'}
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">{profile.full_name || 'Your Name'}</h2>
+            <p className="text-sm text-muted-foreground/80 font-medium">{userEmail}</p>
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20">
+              <Target className="w-3.5 h-3.5" />
+              Profile Active
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold">{profile.full_name || 'Your Name'}</p>
-          <p className="text-sm text-muted-foreground">{userEmail}</p>
-        </div>
-      </div>
+      </motion.div>
 
       {/* AI Eligibility Notice */}
-      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3 text-sm">
-        <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-        <p className="text-muted-foreground">
-          Your profile is used for <strong className="text-foreground">AI Eligibility checks</strong>.
-          Keep CGPA, branch, and batch accurate to get correct results.
-        </p>
-      </div>
+      <motion.div variants={itemVariants} className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 flex gap-4 text-sm md:text-base relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+        <AlertCircle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-blue-500 dark:text-blue-400">AI Eligibility Matcher</p>
+          <p className="text-muted-foreground">
+            Our AI uses your <strong className="text-foreground font-medium">CGPA, Branch, and Batch</strong> to accurately match you with campus drives and off-campus placements.
+          </p>
+        </div>
+      </motion.div>
 
-      <form onSubmit={handleSave} className="space-y-5">
-        {/* Personal Info */}
-        <Section title="Personal Info" icon={<User className="w-4 h-4" />}>
-          <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Full Name" placeholder="Your full name">
-              <input value={profile.full_name || ''} onChange={(e) => set('full_name', e.target.value)} className="input" placeholder="Rahul Kumar" />
-            </Field>
-            <Field label="Father's Name" placeholder="Father's name">
-              <input value={profile.father_name || ''} onChange={(e) => set('father_name', e.target.value)} className="input" placeholder="Kumar Singh" />
-            </Field>
-          </div>
-        </Section>
+      <form onSubmit={handleSave} className="space-y-8">
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Personal Info */}
+          <motion.div variants={itemVariants} className="rounded-3xl border border-white/5 bg-background/40 backdrop-blur-md p-6 md:p-8 space-y-6 shadow-xl">
+            <h3 className="font-bold text-lg flex items-center gap-3 border-b border-white/5 pb-4">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <User className="w-5 h-5" />
+              </div>
+              Personal Details
+            </h3>
+            <div className="space-y-5">
+              <Field label="Full Name">
+                <input value={profile.full_name || ''} onChange={(e) => set('full_name', e.target.value)} className="modern-input" placeholder="Rahul Kumar" />
+              </Field>
+              <Field label="Father's Name">
+                <input value={profile.father_name || ''} onChange={(e) => set('father_name', e.target.value)} className="modern-input" placeholder="Kumar Singh" />
+              </Field>
+            </div>
+          </motion.div>
 
-        {/* Academic Info */}
-        <Section title="Academic Details" icon={<GraduationCap className="w-4 h-4" />}>
-          <div className="grid md:grid-cols-2 gap-4">
-            <Field label="University Roll No.">
-              <input value={profile.university_roll_no || ''} onChange={(e) => set('university_roll_no', e.target.value)} className="input" placeholder="20BCS001" />
+          {/* Academic Info */}
+          <motion.div variants={itemVariants} className="rounded-3xl border border-white/5 bg-background/40 backdrop-blur-md p-6 md:p-8 space-y-6 shadow-xl">
+            <h3 className="font-bold text-lg flex items-center gap-3 border-b border-white/5 pb-4">
+              <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              Academic Standing
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-5">
+              <Field label="Roll Number">
+                <input value={profile.university_roll_no || ''} onChange={(e) => set('university_roll_no', e.target.value)} className="modern-input" placeholder="20BCS001" />
+              </Field>
+              <Field label="Branch">
+                <select value={profile.branch || ''} onChange={(e) => set('branch', e.target.value)} className="modern-input">
+                  <option value="">Select</option>
+                  {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </Field>
+              <Field label="Graduation Year">
+                <input value={profile.batch || ''} onChange={(e) => set('batch', e.target.value)} className="modern-input" placeholder="2024" />
+              </Field>
+              <Field label="CGPA">
+                <input value={profile.cgpa || ''} onChange={(e) => set('cgpa', e.target.value)} className="modern-input" placeholder="8.5" type="number" step="0.01" min="0" max="10" />
+              </Field>
+            </div>
+            
+            <Field label="Active Backlogs">
+              <input value={profile.backlogs || ''} onChange={(e) => set('backlogs', e.target.value)} className="modern-input bg-red-500/5 focus:border-red-500/50" placeholder="0" type="number" min="0" />
             </Field>
-            <Field label="Branch">
-              <select value={profile.branch || ''} onChange={(e) => set('branch', e.target.value)} className="input">
-                <option value="">Select branch</option>
-                {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </Field>
-            <Field label="Batch / Graduation Year">
-              <input value={profile.batch || ''} onChange={(e) => set('batch', e.target.value)} className="input" placeholder="2024" />
-            </Field>
-            <Field label="CGPA">
-              <input value={profile.cgpa || ''} onChange={(e) => set('cgpa', e.target.value)} className="input" placeholder="8.5" type="number" step="0.01" min="0" max="10" />
-            </Field>
-          </div>
-          <Field label="Active Backlogs">
-            <input value={profile.backlogs || ''} onChange={(e) => set('backlogs', e.target.value)} className="input" placeholder="0" type="number" min="0" />
-          </Field>
-        </Section>
+          </motion.div>
+        </div>
 
         {/* Submit */}
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Saving...' : 'Save Profile'}
-        </button>
+        <motion.div variants={itemVariants} className="flex justify-end pt-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-foreground text-background font-bold overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 shadow-xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-purple-600/80 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Save className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">{saving ? 'Saving Profile...' : 'Save Changes'}</span>
+          </button>
+        </motion.div>
       </form>
 
       <style jsx global>{`
-        .input {
+        .modern-input {
           width: 100%;
-          padding: 0.625rem 0.875rem;
-          border-radius: 0.75rem;
-          border: 1px solid hsl(var(--border));
-          background: hsl(var(--background));
+          padding: 0.875rem 1rem;
+          border-radius: 1rem;
+          border: 1px solid hsl(var(--border) / 0.5);
+          background: hsl(var(--background) / 0.5);
           font-size: 0.875rem;
+          font-weight: 500;
           outline: none;
-          transition: border-color 0.15s;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(8px);
         }
-        .input:focus {
-          border-color: hsl(var(--primary));
-          box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+        .modern-input:focus {
+          border-color: hsl(var(--primary) / 0.5);
+          background: hsl(var(--background));
+          box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
+          transform: translateY(-1px);
+        }
+        .modern-input::placeholder {
+          color: hsl(var(--muted-foreground) / 0.5);
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-4">
-      <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
-        {icon} {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function Field({ label, children, placeholder }: { label: string; children: React.ReactNode; placeholder?: string }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{label}</label>
+    <div className="space-y-2">
+      <label className="block text-[13px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
       {children}
     </div>
   );
