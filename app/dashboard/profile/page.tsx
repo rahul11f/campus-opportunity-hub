@@ -148,9 +148,14 @@ export default function ProfilePage() {
               Personal Details
             </h3>
             <div className="space-y-5">
-              <Field label="Full Name">
-                <input value={profile.full_name || ''} onChange={(e) => set('full_name', e.target.value)} className="modern-input" placeholder="Rahul Kumar" />
-              </Field>
+              <div className="grid grid-cols-2 gap-5">
+                <Field label="Full Name">
+                  <input value={profile.full_name || ''} onChange={(e) => set('full_name', e.target.value)} className="modern-input" placeholder="Rahul Kumar" />
+                </Field>
+                <Field label="Phone Number">
+                  <input value={profile.phone || ''} onChange={(e) => set('phone', e.target.value)} className="modern-input" placeholder="+91 9876543210" />
+                </Field>
+              </div>
               <Field label="Father's Name">
                 <input value={profile.father_name || ''} onChange={(e) => set('father_name', e.target.value)} className="modern-input" placeholder="Kumar Singh" />
               </Field>
@@ -167,14 +172,25 @@ export default function ProfilePage() {
             </h3>
             
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Roll Number">
-                <input value={profile.university_roll_no || ''} onChange={(e) => set('university_roll_no', e.target.value)} className="modern-input" placeholder="20BCS001" />
+              <Field label="Degree / Course">
+                <select value={profile.degree || ''} onChange={(e) => set('degree', e.target.value)} className="modern-input">
+                  <option value="">Select</option>
+                  <option value="B.Tech">B.Tech</option>
+                  <option value="M.Tech">M.Tech</option>
+                  <option value="BCA">BCA</option>
+                  <option value="MCA">MCA</option>
+                  <option value="Diploma">Diploma</option>
+                  <option value="Other">Other</option>
+                </select>
               </Field>
               <Field label="Branch">
                 <select value={profile.branch || ''} onChange={(e) => set('branch', e.target.value)} className="modern-input">
                   <option value="">Select</option>
                   {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
                 </select>
+              </Field>
+              <Field label="Roll Number">
+                <input value={profile.university_roll_no || ''} onChange={(e) => set('university_roll_no', e.target.value)} className="modern-input" placeholder="20BCS001" />
               </Field>
               <Field label="Graduation Year">
                 <input value={profile.batch || ''} onChange={(e) => set('batch', e.target.value)} className="modern-input" placeholder="2024" />
@@ -218,6 +234,20 @@ export default function ProfilePage() {
             <Field label="Core Skills (Comma Separated)">
               <input value={profile.skills || ''} onChange={(e) => set('skills', e.target.value)} className="modern-input" placeholder="e.g. React, Python, Java, Machine Learning" />
             </Field>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4">
+              <Field label="LinkedIn URL">
+                <input value={profile.linkedin || ''} onChange={(e) => set('linkedin', e.target.value)} className="modern-input" placeholder="https://linkedin.com/in/..." />
+              </Field>
+              <Field label="GitHub URL">
+                <input value={profile.github || ''} onChange={(e) => set('github', e.target.value)} className="modern-input" placeholder="https://github.com/..." />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Resume URL">
+                  <input value={profile.resume_url || ''} onChange={(e) => set('resume_url', e.target.value)} className="modern-input" placeholder="Link to Google Drive / PDF" />
+                </Field>
+              </div>
+            </div>
           </motion.div>
         </div>
 
