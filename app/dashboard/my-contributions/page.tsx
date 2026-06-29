@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { FileText, CheckCircle2, Clock3, XCircle, Trophy, ExternalLink, ArrowRight, Send } from 'lucide-react';
+import { FileText, CheckCircle2, Clock3, XCircle, Trophy, ExternalLink, ArrowRight, Send, PlusCircle } from 'lucide-react';
 
 export default function MyContributionsPage() {
   const [items, setItems] = useState<any[]>([]);
