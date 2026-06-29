@@ -1,19 +1,35 @@
 export default function SupportPage() {
   return (
     <section className="container py-16 max-w-3xl">
-      <h1 className="text-4xl font-bold tracking-tight">Support</h1>
+      <h1 className="text-4xl font-bold tracking-tight mb-4">Support</h1>
 
-      <p className="mt-4 text-muted-foreground leading-relaxed">
-        Need help or found incorrect information? Reach out via support email.
+      <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+        Need help with your account, found incorrect information on a listing, or experiencing technical issues? We are here to help.
       </p>
 
-      <a
-        href="mailto:hello@campusopportunityhub.in"
-        className="inline-block mt-6 text-primary font-medium"
-      >
-        Contact Support
-      </a>
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="text-xl font-semibold mb-2">Email Support</h2>
+          <p className="text-muted-foreground mb-4">Drop us an email and we'll get back to you within 24 hours.</p>
+          <a
+            href="mailto:campusopportunityhub@gmail.com"
+            className="text-primary font-medium hover:underline break-all"
+          >
+            campusopportunityhub@gmail.com
+          </a>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="text-xl font-semibold mb-2">Phone Support</h2>
+          <p className="text-muted-foreground mb-4">For immediate assistance or urgent account issues.</p>
+          <a
+            href="tel:+918434856473"
+            className="text-primary font-medium hover:underline"
+          >
+            +91 8434856473
+          </a>
+        </div>
+      </div>
     </section>
   );
 }
-

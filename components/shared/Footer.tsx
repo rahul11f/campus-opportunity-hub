@@ -76,7 +76,7 @@ export function Footer() {
             <div className="space-y-2.5 text-xs font-medium text-muted-foreground flex flex-col items-center">
               <FooterLink href="/privacy">Privacy Policy</FooterLink>
               <FooterLink href="/terms">Terms of Service</FooterLink>
-              <FooterLink href="/cookies">Cookie Policy</FooterLink>
+              <FooterLink href="/cookie-policy">Cookie Policy</FooterLink>
             </div>
           </div>
 
