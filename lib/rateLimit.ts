@@ -11,6 +11,7 @@ const configs: Record<string, RateLimitConfig> = {
   'process-notice': { requests: 10, window: '1 h' },
   'opportunities': { requests: 100, window: '1 m' },
   'admin-login': { requests: 5, window: '15 m' },
+  'auth-otp': { requests: 3, window: '1 m' },
   'default': { requests: 60, window: '1 m' },
 };
 
