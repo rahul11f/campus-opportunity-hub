@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const otp = generateOTP();
+    console.log("OTP IS:", otp);
 
     // Store OTP in Redis with a 5-minute expiration
     await redis.set(`otp:${email}`, otp, { ex: 300 });

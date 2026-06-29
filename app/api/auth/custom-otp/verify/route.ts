@@ -33,7 +33,18 @@ export async function POST(req: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const siteUrl = req.nextUrl.origin;
+    const forwardedHost = req.headers.get('x-forwarded-host');
+    const host = req.headers.get('host');
+    const protocol = req.headers.get('x-forwarded-proto') || 'https';
+    
+    let siteUrl = 'http://localhost:3000';
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      siteUrl = process.env.NEXT_PUBLIC_APP_URL;
+    } else if (forwardedHost) {
+      siteUrl = `${protocol}://${forwardedHost}`;
+    } else if (host) {
+      siteUrl = `${protocol}://${host}`;
+    }
 
     if (type === 'signup') {
       // For signup, create the user directly (bypassing email confirmation)
