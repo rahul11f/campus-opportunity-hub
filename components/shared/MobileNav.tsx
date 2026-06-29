@@ -11,7 +11,7 @@ export function MobileNav() {
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Search', href: '/search', icon: Briefcase },
-    { name: 'Post', href: '/dashboard/contribute', icon: PlusCircle },
+    { name: 'Post', href: '/contribute', icon: PlusCircle },
     { name: 'Profile', href: '/dashboard', icon: User },
   ];
 

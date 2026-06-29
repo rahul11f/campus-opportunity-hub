@@ -25,7 +25,7 @@ const NAV = [
   { href: '/dashboard',                label: 'Overview',        icon: LayoutDashboard },
   { href: '/dashboard/saved',          label: 'Saved',           icon: Bookmark         },
   { href: '/dashboard/applications',   label: 'Applications',    icon: Briefcase        },
-  { href: '/dashboard/contribute',     label: 'Contribute',      icon: Send             },
+  { href: '/contribute',     label: 'Contribute',      icon: Send             },
   { href: '/dashboard/my-contributions', label: 'Contributions', icon: FileText         },
   { href: '/dashboard/leaderboard',    label: 'Leaderboard',     icon: Trophy           },
   { href: '/dashboard/notifications',  label: 'Notifications',   icon: Bell             },

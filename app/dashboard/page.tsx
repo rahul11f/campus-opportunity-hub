@@ -161,7 +161,7 @@ export default function DashboardPage() {
           {data.contributions.length === 0 ? (
             <EmptyState
               text="Haven't contributed yet? Submit a notice and earn points!"
-              action={{ label: 'Submit Notice', href: '/dashboard/contribute' }}
+              action={{ label: 'Submit Notice', href: '/contribute' }}
             />
           ) : (
             <div className="space-y-2">

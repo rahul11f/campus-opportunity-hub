@@ -26,6 +26,7 @@ export function Navbar() {
 
   const [mounted, setMounted] = useState(false);
   const [role, setRole] = useState<UserRole>('guest');
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,10 @@ export function Navbar() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from('profiles')
@@ -47,6 +51,7 @@ export function Navbar() {
         .single();
 
       setRole(data?.role === 'admin' ? 'admin' : 'student');
+      setLoading(false);
     }
 
     loadUser();
@@ -87,7 +92,9 @@ export function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-4">
-          {role === 'guest' ? (
+          {loading ? (
+            <div className="w-24 h-9 animate-pulse bg-muted rounded-full" />
+          ) : role === 'guest' ? (
             <>
               <Link
                 href="/login"
@@ -148,8 +155,17 @@ export function Navbar() {
           <Link href="/search" className="block">Opportunities</Link>
           <Link href="/leaderboard" className="block">Leaderboard</Link>
           <Link href="/contribute" className="block">Contribute</Link>
-          <Link href="/login" className="block">Student Login</Link>
-          <Link href="/admin/login" className="block">Admin Login</Link>
+          {role === 'guest' ? (
+            <>
+              <Link href="/login" className="block">Student Login</Link>
+              <Link href="/admin/login" className="block">Admin Login</Link>
+            </>
+          ) : (
+            <>
+              <Link href={role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="block">Dashboard</Link>
+              <a href={signoutHref} className="block text-red-500">Sign Out</a>
+            </>
+          )}
         </div>
       )}
     </header>
