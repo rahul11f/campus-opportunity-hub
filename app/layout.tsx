@@ -38,6 +38,7 @@ export const metadata: Metadata = {
 };
 
 import { CommandMenu } from '@/components/shared/CommandMenu';
+import { AuthHashRedirector } from '@/components/auth/AuthHashRedirector';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CommandMenu />
           <Toaster position="bottom-right" richColors />
           <InstallPrompt />
+          <AuthHashRedirector />
         </ThemeProvider>
       </body>
     </html>
