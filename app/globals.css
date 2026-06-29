@@ -136,15 +136,15 @@
    Admin Panel Theme Helpers
    ═══════════════════════════════════════════════ */
 .admin-bg {
-  @apply bg-background;
+  @apply bg-[#0b1120] text-slate-50;
 }
 
 .admin-sidebar {
-  @apply bg-card border-r border-border;
+  @apply bg-[#111827] border-r border-white/10;
 }
 
 .admin-card {
-  @apply bg-card border border-border shadow-sm;
+  @apply bg-[#111827] border border-white/10 shadow-sm;
 }
 
 /* Table grid: Opportunity | Type | Status | Deadline | Views | Source | Actions (7 cols) */
