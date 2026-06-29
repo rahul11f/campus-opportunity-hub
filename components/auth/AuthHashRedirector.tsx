@@ -30,7 +30,12 @@ export function AuthHashRedirector() {
           if (isRecovery || event === 'PASSWORD_RECOVERY') {
             router.replace('/update-password');
           } else if (isMagicLink) {
-            router.replace('/dashboard');
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim());
+            if (session?.user?.email && adminEmails.includes(session.user.email)) {
+              router.replace('/admin/dashboard');
+            } else {
+              router.replace('/dashboard');
+            }
           }
         }
       });

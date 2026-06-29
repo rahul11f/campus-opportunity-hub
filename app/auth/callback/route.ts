@@ -66,7 +66,11 @@ export async function GET(request: Request) {
       email: email,
     }, { onConflict: 'user_id' });
 
-    // 3. Redirect to dashboard on success
+    // 3. Redirect based on role
+    const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim());
+    if (adminEmails.includes(email)) {
+      return NextResponse.redirect(`${requestUrl.origin}/admin/dashboard`);
+    }
     return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
   }
 
