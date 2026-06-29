@@ -10,7 +10,7 @@ export default function SupportPage() {
       <div className="space-y-6">
         <div className="rounded-2xl border border-border bg-card p-6">
           <h2 className="text-xl font-semibold mb-2">Email Support</h2>
-          <p className="text-muted-foreground mb-4">Drop us an email and we'll get back to you within 24 hours.</p>
+          <p className="text-muted-foreground mb-4">Drop us an email and we&apos;ll get back to you within 24 hours.</p>
           <a
             href="mailto:campusopportunityhub@gmail.com"
             className="text-primary font-medium hover:underline break-all"

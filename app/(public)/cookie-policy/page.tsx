@@ -23,7 +23,7 @@ export default function CookiePolicyPage() {
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">2. Why do we use cookies?</h2>
           <p>
-            We use first-party cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as "essential" or "strictly necessary" cookies. 
+            We use first-party cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as &quot;essential&quot; or &quot;strictly necessary&quot; cookies. 
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Authentication & Security:</strong> We use cookies to manage user sessions, keep you logged in, and protect your account from unauthorized access. (Managed via Supabase).</li>
