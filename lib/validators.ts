@@ -102,6 +102,7 @@ export const OpportunityCreateSchema = z.object({
   featured: z.boolean().default(false),
   is_published: z.boolean().default(false),
   tags: z.array(z.string()).nullable().optional(),
+  contribution_id: z.string().uuid().nullable().optional(),
 });
 
 export const ProcessNoticeSchema = z.object({

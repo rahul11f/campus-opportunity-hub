@@ -1,11 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { OpportunityForm } from '@/components/admin/OpportunityForm';
-import { FilePlus2, Sparkles, AlertCircle } from 'lucide-react';
+import { FilePlus2, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function NewListingPage() {
+  const [draftData, setDraftData] = useState<any>(null);
+  const [contributionId, setContributionId] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isDraft = window.location.search.includes('draft=true');
+      if (isDraft) {
+        const data = localStorage.getItem('draft_opportunity');
+        const cid = localStorage.getItem('draft_contribution_id');
+        if (data) {
+          try {
+            setDraftData(JSON.parse(data));
+          } catch (e) {
+            console.error('Failed to parse draft', e);
+          }
+        }
+        if (cid) setContributionId(cid);
+        
+        localStorage.removeItem('draft_opportunity');
+        localStorage.removeItem('draft_contribution_id');
+      }
+      setLoading(false);
+    }
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
+  }
+
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto pb-32">
       <motion.div 
@@ -46,7 +76,7 @@ export default function NewListingPage() {
         </div>
 
         <div className="bg-background/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-2xl">
-          <OpportunityForm />
+          <OpportunityForm initialData={draftData} contributionId={contributionId} />
         </div>
       </motion.div>
     </div>

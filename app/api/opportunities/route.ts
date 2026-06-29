@@ -273,6 +273,67 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // If this was from a student contribution, approve it and award points
+  if (parsed.data.contribution_id) {
+    const { data: contribution } = await serviceClient
+      .from('student_contributions')
+      .select('id, user_id, status, title')
+      .eq('id', parsed.data.contribution_id)
+      .maybeSingle();
+
+    if (contribution && contribution.status === 'pending') {
+      const REWARD_POINTS = 25;
+      
+      // Update contribution
+      await serviceClient
+        .from('student_contributions')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          points_awarded: REWARD_POINTS,
+          published_opportunity_id: data.id,
+        })
+        .eq('id', contribution.id);
+
+      // Give points
+      const { data: points } = await serviceClient
+        .from('student_points')
+        .select('*')
+        .eq('user_id', contribution.user_id)
+        .maybeSingle();
+
+      if (points) {
+        await serviceClient
+          .from('student_points')
+          .update({
+            total_points: (points.total_points || 0) + REWARD_POINTS,
+            approved_contributions: (points.approved_contributions || 0) + 1,
+          })
+          .eq('user_id', contribution.user_id);
+      } else {
+        await serviceClient
+          .from('student_points')
+          .insert({
+            user_id: contribution.user_id,
+            total_points: REWARD_POINTS,
+            approved_contributions: 1,
+          });
+      }
+
+      // Notify student
+      await serviceClient
+        .from('student_notifications')
+        .insert({
+          user_id: contribution.user_id,
+          title: 'Contribution Approved! 🎉',
+          message: `Your contribution "${contribution.title}" has been approved and you earned ${REWARD_POINTS} points!`,
+          type: 'contribution_approved',
+          read: false,
+        });
+    }
+  }
+
   await serviceClient
     .from('admin_logs')
     .insert({

@@ -12,8 +12,8 @@ import { AdvancedSlotsAccordion } from './AdvancedSlotsAccordion';
 type Props = {
   initialData?: Partial<ExtractedOpportunity> | null;
   rawText?: string;
-  sourceLink?: string | null;
   existingId?: string;
+  contributionId?: string;
 };
 
 const TYPES: OpportunityType[] = [
@@ -49,6 +49,7 @@ export function OpportunityForm({
   rawText = '',
   sourceLink = '',
   existingId,
+  contributionId,
 }: Props) {
   const router = useRouter();
 
@@ -191,6 +192,7 @@ export function OpportunityForm({
           form.apply_link || null,
         source_link:
           form.source_link || null,
+        contribution_id: contributionId || undefined,
       };
 
       const res = await fetch(

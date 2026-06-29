@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   CheckCircle2,
@@ -18,6 +19,7 @@ export default function ContributionsPage() {
   const [tab, setTab] = useState('pending');
   const [loading, setLoading] = useState(false);
   const supabase = useRef(createClient());
+  const router = useRouter();
 
   async function load() {
     setLoading(true);
@@ -49,21 +51,41 @@ export default function ContributionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  async function approve(item: any) {
-    const title            = prompt('Edit title before approval', item.title) || item.title;
-    const contributionType = prompt('Edit type', item.contribution_type) || item.contribution_type;
-    const content          = prompt('Edit content before approval', item.content) || item.content;
+  async function parseWithAI(item: any) {
+    try {
+      setLoading(true);
+      const payload = new FormData();
+      payload.append('method', 'text');
+      
+      // If it's a URL, parse it as a URL
+      if (item.source_link) {
+        payload.set('method', 'url');
+        payload.set('content', item.source_link);
+      } else {
+        payload.set('content', item.content || item.title);
+      }
 
-    const res = await fetch('/api/admin/contributions/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contributionId: item.id, title, content, contributionType }),
-    });
+      const res = await fetch('/api/parse', {
+        method: 'POST',
+        body: payload,
+      });
 
-    const data = await res.json();
-    if (!res.ok) { toast.error(data.error || 'Approval failed'); return; }
-    toast.success('Contribution approved');
-    load();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to parse');
+      }
+
+      const data = await res.json();
+      
+      localStorage.setItem('draft_opportunity', JSON.stringify(data.opportunity));
+      localStorage.setItem('draft_contribution_id', item.id);
+      
+      router.push('/admin/new?draft=true');
+    } catch (err: any) {
+      toast.error(err.message || 'Parsing failed');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function reject(item: any) {
@@ -177,10 +199,10 @@ export default function ContributionsPage() {
           {tab === 'pending' && (
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => approve(item)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-500 transition-colors"
+                onClick={() => parseWithAI(item)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
               >
-                <CheckCircle2 className="w-4 h-4" /> Approve
+                <CheckCircle2 className="w-4 h-4" /> Parse via AI
               </button>
               <button
                 onClick={() => reject(item)}
