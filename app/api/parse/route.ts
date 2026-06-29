@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       const result = await model.generateContent([SYSTEM_PROMPT, "Extract the data from this image.", imagePart]);
       const response = await result.response;
       let rawJson = response.text().trim();
-      if (rawJson.startsWith('\`\`\`json')) rawJson = rawJson.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '');
+      if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
       
       return NextResponse.json({ opportunity: JSON.parse(rawJson) });
     } else {
@@ -94,10 +94,10 @@ export async function POST(req: Request) {
 
     // Process Text/URL/JSON
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const result = await model.generateContent([SYSTEM_PROMPT, \`INPUT DATA: \n\${inputContext}\`]);
+    const result = await model.generateContent([SYSTEM_PROMPT, `INPUT DATA: \n${inputContext}`]);
     const response = await result.response;
     let rawJson = response.text().trim();
-    if (rawJson.startsWith('\`\`\`json')) rawJson = rawJson.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '');
+    if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
     
     return NextResponse.json({ opportunity: JSON.parse(rawJson) });
 

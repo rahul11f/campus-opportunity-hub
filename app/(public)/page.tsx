@@ -103,7 +103,7 @@ export default async function HomePage() {
         <div className="flex items-end justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground mb-1">Explore Categories</h2>
-            <p className="text-muted-foreground text-sm">Find exactly what you're looking for</p>
+            <p className="text-muted-foreground text-sm">Find exactly what you&apos;re looking for</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -148,7 +148,7 @@ export default async function HomePage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">Closing Soon</h2>
-                <p className="text-sm text-muted-foreground">Don't miss these deadlines</p>
+                <p className="text-sm text-muted-foreground">Don&apos;t miss these deadlines</p>
               </div>
             </div>
           </div>

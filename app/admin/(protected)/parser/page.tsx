@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bot, Link as LinkIcon, FileJson, Image as ImageIcon, FileText, Loader2, Wand2, Upload } from 'lucide-react';
+import { Bot, Link as LinkIcon, FileJson, Image as ImageIcon, FileText, Loader2, Wand2, Upload, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -152,7 +152,7 @@ export default function AIParserDashboard() {
                   <>
                     <label className="text-sm font-semibold text-gray-300">Paste Raw JSON payload</label>
                     <textarea 
-                      placeholder="{ \"company\": \"Google\", \"role\": \"SWE\" ... }"
+                      placeholder='{ "company": "Google", "role": "SWE" ... }'
                       className="w-full h-64 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all font-mono text-sm"
                       value={json}
                       onChange={e => setJson(e.target.value)}

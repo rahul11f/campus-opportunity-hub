@@ -242,7 +242,7 @@ export function StudentAuthForm() {
           {mode === 'login' ? (
             <>
               <p>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button type="button" onClick={() => { setMode('signup'); setFieldErrors({}); }} className="text-foreground font-bold hover:underline decoration-primary">
                   Sign up
                 </button>
