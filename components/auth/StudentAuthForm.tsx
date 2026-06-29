@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Sparkles, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Sparkles, Mail, Lock, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -15,7 +15,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-type AuthMode = 'login' | 'signup' | 'forgot-password';
+type AuthMode = 'login' | 'signup' | 'forgot-password' | 'otp' | 'otp-verify';
 
 export function StudentAuthForm() {
   const supabase = createClient();
@@ -23,6 +23,7 @@ export function StudentAuthForm() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; general?: string }>({});
@@ -85,6 +86,29 @@ export function StudentAuthForm() {
         }
         window.location.href = '/dashboard';
       }
+      else if (mode === 'otp') {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const respData = await res.json();
+        
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Failed to send OTP' });
+          return;
+        }
+        setMode('otp-verify');
+        toast.success('6-digit code sent to your email!');
+      }
+      else if (mode === 'otp-verify') {
+        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' });
+        if (error) {
+          setFieldErrors({ general: error.message });
+          return;
+        }
+        window.location.href = '/dashboard';
+      }
       else if (mode === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/update-password` });
         if (error) {
@@ -112,12 +136,16 @@ export function StudentAuthForm() {
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
-            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : 'Reset Password'}
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'otp' ? 'Secure Login' : mode === 'otp-verify' ? 'Enter Code' : 'Reset Password'}
           </h1>
           <p className="text-sm text-muted-foreground font-medium">
             {mode === 'login' || mode === 'signup' 
               ? 'Join the premium campus network' 
-              : 'We will send you a reset link'}
+              : mode === 'otp'
+                ? 'Sign in securely with a 6-digit code'
+                : mode === 'otp-verify'
+                  ? 'We sent a 6-digit code to your email'
+                  : 'We will send you a reset link'}
           </p>
         </div>
 
@@ -144,24 +172,46 @@ export function StudentAuthForm() {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email Address</label>
-            <div className="relative">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setFieldErrors({ ...fieldErrors, email: undefined, general: undefined });
-                }}
-                className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.email ? 'border-destructive focus:ring-destructive/50' : ''}`}
-                placeholder="student@university.edu"
-              />
-              <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {mode !== 'otp-verify' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email Address</label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFieldErrors({ ...fieldErrors, email: undefined, general: undefined });
+                  }}
+                  className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.email ? 'border-destructive focus:ring-destructive/50' : ''}`}
+                  placeholder="student@university.edu"
+                />
+                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              </div>
+              {fieldErrors.email && <p className="text-destructive text-xs font-bold ml-1 mt-1">{fieldErrors.email}</p>}
             </div>
-            {fieldErrors.email && <p className="text-destructive text-xs font-bold ml-1 mt-1">{fieldErrors.email}</p>}
-          </div>
+          )}
+
+          {mode === 'otp-verify' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">6-Digit Code</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={otpCode}
+                  onChange={(e) => {
+                    setOtpCode(e.target.value);
+                    setFieldErrors({ ...fieldErrors, general: undefined });
+                  }}
+                  className="w-full pl-4 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-center tracking-widest font-bold outline-none text-xl"
+                  placeholder="000000"
+                  maxLength={6}
+                />
+              </div>
+            </div>
+          )}
 
           {(mode === 'login' || mode === 'signup') && (
             <div className="space-y-1.5">
@@ -196,7 +246,7 @@ export function StudentAuthForm() {
             disabled={loading}
             className="w-full flex items-center justify-center py-3.5 rounded-xl bg-foreground text-background font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg mt-2"
           >
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'otp' ? 'Send OTP Code' : mode === 'otp-verify' ? 'Verify Code' : 'Send Reset Link'}
           </button>
         </form>
 
@@ -221,12 +271,17 @@ export function StudentAuthForm() {
 
         <div className="mt-8 text-center text-sm font-medium text-muted-foreground flex flex-col gap-2">
           {mode === 'login' ? (
-            <p>
-              Don&apos;t have an account?{' '}
-              <button type="button" onClick={() => { setMode('signup'); setFieldErrors({}); }} className="text-foreground font-bold hover:underline decoration-primary">
-                Sign up
+            <>
+              <p>
+                Don&apos;t have an account?{' '}
+                <button type="button" onClick={() => { setMode('signup'); setFieldErrors({}); }} className="text-foreground font-bold hover:underline decoration-primary">
+                  Sign up
+                </button>
+              </p>
+              <button type="button" onClick={() => { setMode('otp'); setFieldErrors({}); }} className="text-primary font-bold hover:underline flex items-center justify-center gap-1 mx-auto mt-2">
+                <KeyRound className="w-4 h-4" /> Login with OTP Code
               </button>
-            </p>
+            </>
           ) : (
             <p>
               Back to{' '}
