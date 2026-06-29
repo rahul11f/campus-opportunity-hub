@@ -70,19 +70,16 @@ export function StudentAuthForm() {
     setLoading(true);
     setFieldErrors({});
     try {
-      if (mode === 'signup-verify') {
-        const { error } = await supabase.auth.resend({ type: 'signup', email });
-        if (error) throw error;
-      } else if (mode === 'forgot-password-verify') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-        if (error) throw error;
-      } else if (mode === 'otp-verify') {
-        const res = await fetch('/api/auth/send-otp', {
+      if (mode === 'signup-verify' || mode === 'forgot-password-verify' || mode === 'otp-verify') {
+        const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
-        if (!res.ok) throw new Error('Failed to send OTP');
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to send OTP');
+        }
       }
       toast.success('New 6-digit code sent!');
       setResendTimer(60);
@@ -102,26 +99,32 @@ export function StudentAuthForm() {
 
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          setFieldErrors({ general: error.message });
+        const res = await fetch('/api/auth/custom-otp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const respData = await res.json();
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Failed to send OTP' });
           return;
-        }
-        if (data.user) {
-          await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName, email });
-          await supabase.from('student_profiles').upsert({ user_id: data.user.id, full_name: fullName, email });
         }
         setMode('signup-verify');
         setResendTimer(60);
         toast.success('6-digit code sent to your email!');
       } 
       else if (mode === 'signup-verify') {
-        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
-        if (error) {
-          setFieldErrors({ general: error.message });
+        const res = await fetch('/api/auth/custom-otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: otpCode, type: 'signup', password, fullName })
+        });
+        const respData = await res.json();
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
-        window.location.href = '/dashboard';
+        window.location.href = respData.redirectUrl;
       }
       else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -133,7 +136,7 @@ export function StudentAuthForm() {
         window.location.href = '/dashboard';
       }
       else if (mode === 'otp') {
-        const res = await fetch('/api/auth/send-otp', {
+        const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
@@ -149,17 +152,27 @@ export function StudentAuthForm() {
         toast.success('6-digit code sent to your email!');
       }
       else if (mode === 'otp-verify') {
-        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' });
-        if (error) {
-          setFieldErrors({ general: error.message });
+        const res = await fetch('/api/auth/custom-otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: otpCode, type: 'login' })
+        });
+        const respData = await res.json();
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
-        window.location.href = '/dashboard';
+        window.location.href = respData.redirectUrl;
       }
       else if (mode === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-        if (error) {
-          setFieldErrors({ general: error.message });
+        const res = await fetch('/api/auth/custom-otp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const respData = await res.json();
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Failed to send OTP' });
           return;
         }
         setMode('forgot-password-verify');
@@ -167,12 +180,17 @@ export function StudentAuthForm() {
         toast.success('Password reset 6-digit code sent to your email!');
       }
       else if (mode === 'forgot-password-verify') {
-        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'recovery' });
-        if (error) {
-          setFieldErrors({ general: error.message });
+        const res = await fetch('/api/auth/custom-otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: otpCode, type: 'recovery' })
+        });
+        const respData = await res.json();
+        if (!res.ok) {
+          setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
-        window.location.href = '/update-password';
+        window.location.href = respData.redirectUrl;
       }
     } finally {
       setLoading(false);
