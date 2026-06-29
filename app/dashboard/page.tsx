@@ -96,7 +96,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <Link
-          href="/dashboard/contribute"
+          href="/contribute"
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
         >
           <Send className="w-4 h-4" /> Contribute Notice

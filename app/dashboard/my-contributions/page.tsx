@@ -47,7 +47,7 @@ export default function MyContributionsPage() {
           </p>
         </div>
         <Link
-          href="/dashboard/contribute"
+          href="/contribute"
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
         >
           <Send className="w-4 h-4" /> Submit New
@@ -119,9 +119,11 @@ export default function MyContributionsPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Submit campus notices, job posts, or notices from WhatsApp/Telegram to earn points.
               </p>
-              <Link href="/dashboard/contribute" className="text-primary text-sm hover:underline flex items-center justify-center gap-1">
-                Submit your first notice <ArrowRight className="w-3 h-3" />
-              </Link>
+              <div className="mt-6">
+                <Link href="/contribute" className="text-primary text-sm hover:underline flex items-center justify-center gap-1">
+                  <PlusCircle className="w-4 h-4" /> Submit your first contribution <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </>
           )}
         </div>

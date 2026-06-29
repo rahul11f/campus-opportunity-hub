@@ -148,7 +148,7 @@ export function PublicNavbar() {
                       <Link href="/dashboard/profile" className="flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-accent transition-colors" onClick={() => setDropdownOpen(false)}>
                         <User className="w-4 h-4" /> Profile
                       </Link>
-                      <Link href="/dashboard/contribute" className="flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-accent transition-colors" onClick={() => setDropdownOpen(false)}>
+                      <Link href="/contribute" className="flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-accent transition-colors" onClick={() => setDropdownOpen(false)}>
                         <PlusCircle className="w-4 h-4" /> Contribute
                       </Link>
                       <button

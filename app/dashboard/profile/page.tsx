@@ -188,6 +188,37 @@ export default function ProfilePage() {
               <input value={profile.backlogs || ''} onChange={(e) => set('backlogs', e.target.value)} className="modern-input bg-red-500/5 focus:border-red-500/50" placeholder="0" type="number" min="0" />
             </Field>
           </motion.div>
+          
+          {/* Detailed Eligibility Info */}
+          <motion.div variants={itemVariants} className="rounded-3xl border border-white/5 bg-background/40 backdrop-blur-md p-6 md:p-8 space-y-6 shadow-xl md:col-span-2">
+            <h3 className="font-bold text-lg flex items-center gap-3 border-b border-white/5 pb-4">
+              <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
+                <Target className="w-5 h-5" />
+              </div>
+              Extended Eligibility Details
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Field label="Gender">
+                <select value={profile.gender || ''} onChange={(e) => set('gender', e.target.value)} className="modern-input">
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </Field>
+              <Field label="10th Marks (%)">
+                <input value={profile.tenth_marks || ''} onChange={(e) => set('tenth_marks', e.target.value)} className="modern-input" placeholder="e.g. 85.5" type="number" step="0.01" />
+              </Field>
+              <Field label="12th / Diploma Marks (%)">
+                <input value={profile.twelfth_marks || ''} onChange={(e) => set('twelfth_marks', e.target.value)} className="modern-input" placeholder="e.g. 82.0" type="number" step="0.01" />
+              </Field>
+            </div>
+            
+            <Field label="Core Skills (Comma Separated)">
+              <input value={profile.skills || ''} onChange={(e) => set('skills', e.target.value)} className="modern-input" placeholder="e.g. React, Python, Java, Machine Learning" />
+            </Field>
+          </motion.div>
         </div>
 
         {/* Submit */}

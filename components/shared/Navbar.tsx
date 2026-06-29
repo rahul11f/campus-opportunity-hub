@@ -147,7 +147,7 @@ export function Navbar() {
         <div className="lg:hidden border-t px-4 py-4 space-y-3">
           <Link href="/search" className="block">Opportunities</Link>
           <Link href="/leaderboard" className="block">Leaderboard</Link>
-          <Link href="/dashboard/contribute" className="block">Contribute</Link>
+          <Link href="/contribute" className="block">Contribute</Link>
           <Link href="/login" className="block">Student Login</Link>
           <Link href="/admin/login" className="block">Admin Login</Link>
         </div>
