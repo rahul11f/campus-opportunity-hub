@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Sparkles, Mail, Lock, KeyRound } from 'lucide-react';
+import { ArrowLeft, Sparkles, Mail, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -23,6 +23,7 @@ export function StudentAuthForm() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -302,17 +303,23 @@ export function StudentAuthForm() {
               </div>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setFieldErrors({ ...fieldErrors, password: undefined, general: undefined });
                   }}
-                  className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.password ? 'border-destructive focus:ring-destructive/50' : ''}`}
+                  className={`w-full pl-4 pr-12 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.password ? 'border-destructive focus:ring-destructive/50' : ''}`}
                   placeholder="••••••••"
                 />
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               {fieldErrors.password && <p className="text-destructive text-xs font-bold ml-1 mt-1">{fieldErrors.password}</p>}
             </div>

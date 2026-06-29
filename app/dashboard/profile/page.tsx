@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Save, User, GraduationCap, AlertCircle, Sparkles, Target, BookOpen, Briefcase } from 'lucide-react';
+import { Save, User, GraduationCap, AlertCircle, Sparkles, Target, BookOpen, Briefcase, Lock, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BRANCHES = [
@@ -29,6 +29,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const supabase = useRef(createClient());
 
@@ -73,6 +75,26 @@ export default function ProfilePage() {
       toast.success('Profile saved successfully!');
     }
     setSaving(false);
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setSavingPassword(true);
+    const { error } = await supabase.current.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      toast.error('Failed to update password: ' + error.message);
+    } else {
+      toast.success('Password updated successfully!');
+      setNewPassword('');
+    }
+    setSavingPassword(false);
   }
 
   function set(key: string, value: string) {
@@ -264,6 +286,42 @@ export default function ProfilePage() {
           </button>
         </motion.div>
       </form>
+
+      <motion.form 
+        variants={itemVariants} 
+        onSubmit={handlePasswordChange}
+        className="mt-8 rounded-3xl border border-white/5 bg-background/40 backdrop-blur-md p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none translate-x-1/2 -translate-y-1/2" />
+        
+        <h3 className="font-bold text-lg flex items-center gap-3 border-b border-white/5 pb-4">
+          <div className="p-2 bg-primary/10 rounded-lg text-primary">
+            <Lock className="w-5 h-5" />
+          </div>
+          Security Settings
+        </h3>
+        
+        <div className="max-w-md space-y-4">
+          <Field label="New Password">
+            <input 
+              value={newPassword} 
+              onChange={(e) => setNewPassword(e.target.value)} 
+              className="modern-input" 
+              placeholder="••••••••" 
+              type="password" 
+            />
+          </Field>
+          
+          <button
+            type="submit"
+            disabled={savingPassword || !newPassword}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors font-semibold text-sm disabled:opacity-50"
+          >
+            <KeyRound className="w-4 h-4" />
+            {savingPassword ? 'Updating...' : 'Update Password'}
+          </button>
+        </div>
+      </motion.form>
 
       <style jsx global>{`
         .modern-input {
