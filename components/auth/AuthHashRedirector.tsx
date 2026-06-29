@@ -2,22 +2,36 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export function AuthHashRedirector() {
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash && hash.includes('access_token=')) {
-        if (hash.includes('type=recovery')) {
-          router.replace('/update-password');
-        } else if (hash.includes('type=magiclink') || hash.includes('type=signup')) {
-          router.replace('/dashboard');
+    if (typeof window === 'undefined') return;
+    
+    const hash = window.location.hash;
+    const hasAccessToken = hash && hash.includes('access_token=');
+    const isRecovery = hash && hash.includes('type=recovery');
+    const isMagicLink = hash && (hash.includes('type=magiclink') || hash.includes('type=signup'));
+
+    if (hasAccessToken) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+          if (isRecovery || event === 'PASSWORD_RECOVERY') {
+            router.replace('/update-password');
+          } else if (isMagicLink) {
+            router.replace('/dashboard');
+          }
         }
-      }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
-  }, [router]);
+  }, [router, supabase]);
 
   return null;
 }
