@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const siteUrl = req.nextUrl.origin;
 
     if (type === 'signup') {
       // For signup, create the user directly (bypassing email confirmation)
