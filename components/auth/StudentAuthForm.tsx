@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Sparkles, Mail, Lock, KeyRound } from 'lucide-react';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-type AuthMode = 'login' | 'signup' | 'forgot-password' | 'otp' | 'otp-verify';
+type AuthMode = 'login' | 'signup' | 'forgot-password' | 'otp' | 'otp-verify' | 'signup-verify' | 'forgot-password-verify';
 
 export function StudentAuthForm() {
   const supabase = createClient();
@@ -26,7 +26,15 @@ export function StudentAuthForm() {
   const [otpCode, setOtpCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const validate = () => {
     const errors: { email?: string; password?: string } = {};
@@ -57,6 +65,34 @@ export function StudentAuthForm() {
     }
   }
 
+  async function handleResendOTP() {
+    if (resendTimer > 0) return;
+    setLoading(true);
+    setFieldErrors({});
+    try {
+      if (mode === 'signup-verify') {
+        const { error } = await supabase.auth.resend({ type: 'signup', email });
+        if (error) throw error;
+      } else if (mode === 'forgot-password-verify') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+      } else if (mode === 'otp-verify') {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        if (!res.ok) throw new Error('Failed to send OTP');
+      }
+      toast.success('New 6-digit code sent!');
+      setResendTimer(60);
+    } catch (err: any) {
+      setFieldErrors({ general: err.message });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
@@ -75,8 +111,18 @@ export function StudentAuthForm() {
           await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName, email });
           await supabase.from('student_profiles').upsert({ user_id: data.user.id, full_name: fullName, email });
         }
-        toast.success('Check your email for the verification link.');
+        setMode('signup-verify');
+        setResendTimer(60);
+        toast.success('6-digit code sent to your email!');
       } 
+      else if (mode === 'signup-verify') {
+        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
+        if (error) {
+          setFieldErrors({ general: error.message });
+          return;
+        }
+        window.location.href = '/dashboard';
+      }
       else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
@@ -99,6 +145,7 @@ export function StudentAuthForm() {
           return;
         }
         setMode('otp-verify');
+        setResendTimer(60);
         toast.success('6-digit code sent to your email!');
       }
       else if (mode === 'otp-verify') {
@@ -110,17 +157,29 @@ export function StudentAuthForm() {
         window.location.href = '/dashboard';
       }
       else if (mode === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/update-password` });
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) {
           setFieldErrors({ general: error.message });
           return;
         }
-        toast.success('Password reset link sent to your email!');
+        setMode('forgot-password-verify');
+        setResendTimer(60);
+        toast.success('Password reset 6-digit code sent to your email!');
+      }
+      else if (mode === 'forgot-password-verify') {
+        const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'recovery' });
+        if (error) {
+          setFieldErrors({ general: error.message });
+          return;
+        }
+        window.location.href = '/update-password';
       }
     } finally {
       setLoading(false);
     }
   }
+
+  const isVerifyMode = mode === 'otp-verify' || mode === 'signup-verify' || mode === 'forgot-password-verify';
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background relative py-12">
@@ -136,16 +195,16 @@ export function StudentAuthForm() {
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
-            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'otp' ? 'Secure Login' : mode === 'otp-verify' ? 'Enter Code' : 'Reset Password'}
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : mode === 'otp' ? 'Secure Login' : isVerifyMode ? 'Enter Code' : 'Reset Password'}
           </h1>
           <p className="text-sm text-muted-foreground font-medium">
             {mode === 'login' || mode === 'signup' 
               ? 'Join the premium campus network' 
               : mode === 'otp'
                 ? 'Sign in securely with a 6-digit code'
-                : mode === 'otp-verify'
+                : isVerifyMode
                   ? 'We sent a 6-digit code to your email'
-                  : 'We will send you a reset link'}
+                  : 'We will send you a reset code'}
           </p>
         </div>
 
@@ -172,7 +231,7 @@ export function StudentAuthForm() {
             </div>
           )}
 
-          {mode !== 'otp-verify' && (
+          {!isVerifyMode && (
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email Address</label>
               <div className="relative">
@@ -193,7 +252,7 @@ export function StudentAuthForm() {
             </div>
           )}
 
-          {mode === 'otp-verify' && (
+          {isVerifyMode && (
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">6-Digit Code</label>
               <div className="relative">
@@ -246,9 +305,21 @@ export function StudentAuthForm() {
             disabled={loading}
             className="w-full flex items-center justify-center py-3.5 rounded-xl bg-foreground text-background font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg mt-2"
           >
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'otp' ? 'Send OTP Code' : mode === 'otp-verify' ? 'Verify Code' : 'Send Reset Link'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'otp' ? 'Send OTP Code' : isVerifyMode ? 'Verify Code' : 'Send Reset Code'}
           </button>
         </form>
+
+        {isVerifyMode && (
+          <div className="mt-6 text-center">
+            <button 
+              onClick={handleResendOTP} 
+              disabled={resendTimer > 0 || loading}
+              className="text-sm font-bold text-primary hover:underline disabled:opacity-50 disabled:hover:no-underline"
+            >
+              {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Code'}
+            </button>
+          </div>
+        )}
 
         {(mode === 'login' || mode === 'signup') && (
           <>
