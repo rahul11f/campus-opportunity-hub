@@ -19,7 +19,7 @@ export async function sendEmail({
       'api-key': apiKey,
     },
     body: JSON.stringify({
-      sender: { name: 'Campus Opportunity Hub', email: 'noreply@campusopportunityhub.com' },
+      sender: { name: 'Campus Opportunity Hub', email: 'raajrahul147@gmail.com' },
       to: [{ email: to }],
       subject,
       htmlContent,
