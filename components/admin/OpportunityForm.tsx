@@ -12,6 +12,7 @@ import { AdvancedSlotsAccordion } from './AdvancedSlotsAccordion';
 type Props = {
   initialData?: Partial<ExtractedOpportunity> | null;
   rawText?: string;
+  sourceLink?: string | null;
   existingId?: string;
   contributionId?: string;
 };
