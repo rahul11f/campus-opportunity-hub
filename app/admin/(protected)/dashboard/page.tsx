@@ -200,17 +200,17 @@ export default function AdminDashboardPage() {
               {data.leaderboard.map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                   <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
-                    i === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
-                    i === 1 ? 'bg-gray-400/20 text-gray-400 border border-gray-400/20' :
-                    i === 2 ? 'bg-orange-600/20 text-orange-400 border border-orange-600/20' : 'bg-white/5 text-gray-500'
+                    i === 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                    i === 1 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
+                    i === 2 ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-slate-100 text-slate-600'
                   }`}>#{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">
                       {item.student_name || item.user_id?.slice(0, 8) || 'Anonymous'}
                     </p>
-                    <p className="text-[11px] font-medium text-slate-400">{item.approved_contributions || 0} contributions</p>
+                    <p className="text-[11px] font-medium text-slate-500">{item.approved_contributions || 0} contributions</p>
                   </div>
-                  <span className="text-sm font-black text-amber-600">{item.total_points}</span>
+                  <span className="text-sm font-black text-amber-700">{item.total_points}</span>
                 </div>
               ))}
             </div>
@@ -274,12 +274,12 @@ function DashCard({ icon, label, value, color, trend }: {
   icon: React.ReactNode; label: string; value: number; color: string; trend?: string;
 }) {
   const styles: Record<string, { border: string; icon: string; bg: string }> = {
-    blue:    { border: 'border-blue-500/20',   icon: 'text-blue-400',   bg: 'bg-blue-500/10' },
-    emerald: { border: 'border-emerald-500/20',icon: 'text-emerald-400',bg: 'bg-emerald-500/10' },
-    indigo:  { border: 'border-indigo-500/20', icon: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-    purple:  { border: 'border-purple-500/20', icon: 'text-purple-400', bg: 'bg-purple-500/10' },
-    amber:   { border: 'border-amber-500/20',  icon: 'text-amber-400',  bg: 'bg-amber-500/10' },
-    rose:    { border: 'border-rose-500/20',   icon: 'text-rose-400',   bg: 'bg-rose-500/10' },
+    blue:    { border: 'border-blue-200',   icon: 'text-blue-600',   bg: 'bg-blue-50' },
+    emerald: { border: 'border-emerald-200',icon: 'text-emerald-600',bg: 'bg-emerald-50' },
+    indigo:  { border: 'border-indigo-200', icon: 'text-indigo-600', bg: 'bg-indigo-50' },
+    purple:  { border: 'border-purple-200', icon: 'text-purple-600', bg: 'bg-purple-50' },
+    amber:   { border: 'border-amber-200',  icon: 'text-amber-600',  bg: 'bg-amber-50' },
+    rose:    { border: 'border-rose-200',   icon: 'text-rose-600',   bg: 'bg-rose-50' },
   };
   const s = styles[color] || styles.blue;
 
@@ -300,7 +300,7 @@ function DashCard({ icon, label, value, color, trend }: {
 
 function Metric({ label, value, accent }: { label: string; value: string | number; accent: string }) {
   const accentMap: Record<string, string> = {
-    emerald: 'text-emerald-400', blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400',
+    emerald: 'text-emerald-700', blue: 'text-blue-700', rose: 'text-rose-700', amber: 'text-amber-700',
   };
   return (
     <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
@@ -338,9 +338,9 @@ function QuickAction({ href, icon, label, color, badge }: {
 
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, string> = {
-    pending:  'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    rejected: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    pending:  'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-rose-50 text-rose-700 border-rose-200',
   };
   return (
     <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1.5 rounded-lg border shrink-0 ${map[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>

@@ -120,9 +120,9 @@ export default function ContributionsPage() {
       <div className="flex gap-2 flex-wrap">
         {tabs.map(({ id, label, color }) => {
           const activeMap: Record<string, string> = {
-            amber: 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30',
-            green: 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30',
-            red:   'bg-red-500/20 text-red-400 ring-1 ring-red-500/30',
+            amber: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+            green: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+            red:   'bg-red-50 text-red-700 ring-1 ring-red-200',
           };
           return (
             <button
@@ -140,7 +140,7 @@ export default function ContributionsPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center gap-2 text-gray-400 text-sm py-4">
+        <div className="flex items-center gap-2 text-slate-500 text-sm py-4">
           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           Loading...
         </div>
@@ -148,7 +148,7 @@ export default function ContributionsPage() {
 
       {/* Empty */}
       {!loading && items.length === 0 && (
-        <div className="admin-card rounded-xl p-16 text-center border border-slate-200">
+        <div className="admin-card rounded-xl p-16 text-center border border-slate-200 bg-white">
           <div className="text-4xl mb-3">📭</div>
           <p className="text-slate-400 font-medium">No {tab} contributions</p>
         </div>
@@ -182,7 +182,7 @@ export default function ContributionsPage() {
               href={item.source_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
             >
               <ExternalLink className="w-4 h-4" /> Preview Source
             </a>
@@ -190,7 +190,7 @@ export default function ContributionsPage() {
 
           {/* Rejection reason */}
           {item.rejection_reason && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               <strong>Rejection reason:</strong> {item.rejection_reason}
             </div>
           )}

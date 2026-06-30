@@ -43,17 +43,17 @@ function getInitials(name?: string | null) {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  internship:  'bg-emerald-500/20 text-emerald-400',
-  placement:   'bg-blue-500/20 text-blue-400',
-  campus_drive:'bg-cyan-500/20 text-cyan-400',
-  hackathon:   'bg-violet-500/20 text-violet-400',
-  scholarship: 'bg-amber-500/20 text-amber-400',
-  fellowship:  'bg-orange-500/20 text-orange-400',
-  competition: 'bg-rose-500/20 text-rose-400',
-  other:       'bg-gray-500/20 text-gray-400',
-  job:         'bg-sky-500/20 text-sky-400',
-  notice:      'bg-purple-500/20 text-purple-400',
-  workshop:    'bg-pink-500/20 text-pink-400',
+  internship:  'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  placement:   'bg-blue-50 text-blue-700 border border-blue-200',
+  campus_drive:'bg-slate-100 text-slate-700 border border-slate-200',
+  hackathon:   'bg-violet-50 text-violet-700 border border-violet-200',
+  scholarship: 'bg-amber-50 text-amber-700 border border-amber-200',
+  fellowship:  'bg-orange-50 text-orange-700 border border-orange-200',
+  competition: 'bg-rose-50 text-rose-700 border border-rose-200',
+  other:       'bg-gray-100 text-gray-700 border border-gray-200',
+  job:         'bg-sky-50 text-sky-700 border border-sky-200',
+  notice:      'bg-purple-50 text-purple-700 border border-purple-200',
+  workshop:    'bg-pink-50 text-pink-700 border border-pink-200',
 };
 
 const LOGO_PRESETS: Record<string, string> = {
@@ -186,8 +186,8 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">All Opportunities</h1>
-          <p className="text-gray-400 text-sm mt-1">Manage all opportunities and listings on the platform</p>
+          <h1 className="text-2xl font-bold text-slate-900">All Opportunities</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage all opportunities and listings on the platform</p>
         </div>
         <Link
           href="/admin/new"
@@ -213,17 +213,17 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
             const count = t === 'all' ? total : t === 'live' ? live : t === 'draft' ? draft : expired;
             const activeStyle = {
               all:     'bg-blue-600 text-white',
-              live:    'bg-green-600/20 text-green-400 ring-1 ring-green-500/30',
-              draft:   'bg-amber-600/20 text-amber-400 ring-1 ring-amber-500/30',
-              expired: 'bg-red-600/20 text-red-400 ring-1 ring-red-500/30',
+              live:    'bg-green-50 text-green-700 ring-1 ring-green-200',
+              draft:   'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+              expired: 'bg-red-50 text-red-700 ring-1 ring-red-200',
             }[t];
-            const dotColor = { all: '', live: 'bg-green-400', draft: 'bg-amber-400', expired: 'bg-red-400' }[t];
+            const dotColor = { all: '', live: 'bg-green-500', draft: 'bg-amber-500', expired: 'bg-red-500' }[t];
             return (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  tab === t ? activeStyle : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  tab === t ? activeStyle : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 {dotColor && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
@@ -234,25 +234,25 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 w-60">
-            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+          <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 w-60">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               placeholder="Search opportunities..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="bg-transparent outline-none text-sm text-white placeholder-gray-500 w-full"
+              className="bg-transparent outline-none text-sm text-slate-800 placeholder-slate-400 w-full"
             />
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
             <Filter className="w-4 h-4" /> Filters
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="admin-card rounded-xl overflow-hidden">
+      <div className="admin-card rounded-xl overflow-hidden bg-white">
         {/* Table Head */}
-        <div className="grid admin-table-grid px-5 py-3.5 border-b border-white/10 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <div className="grid admin-table-grid px-5 py-3.5 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
           <div>Opportunity</div>
           <div>Type</div>
           <div>Status</div>
@@ -266,8 +266,8 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
         {paginated.length === 0 ? (
           <div className="py-16 text-center">
             <div className="text-4xl mb-3">🔍</div>
-            <p className="text-gray-400 font-medium">No opportunities found</p>
-            <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search query</p>
+            <p className="text-slate-500 font-medium">No opportunities found</p>
+            <p className="text-slate-400 text-sm mt-1">Try adjusting your filters or search query</p>
           </div>
         ) : (
           paginated.map((item) => {
@@ -281,7 +281,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
             return (
               <div
                 key={item.id}
-                className="grid admin-table-grid px-5 py-4 border-b border-white/[0.06] items-center hover:bg-white/[0.025] transition-colors relative"
+                className="grid admin-table-grid px-5 py-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors relative"
               >
                 {/* Company + Role */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -292,9 +292,9 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                     ) : getInitials(item.company)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-white text-sm truncate">{item.role || 'Untitled'}</p>
+                    <p className="font-semibold text-slate-900 text-sm truncate">{item.role || 'Untitled'}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-gray-400 truncate">{item.company}</span>
+                      <span className="text-xs text-slate-500 truncate">{item.company}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${TYPE_COLORS[typeKey] || TYPE_COLORS.other}`}>
                         {typeKey}
                       </span>
@@ -320,14 +320,14 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                 <div className="text-sm">
                   {item.deadline ? (
                     <>
-                      <p className="text-gray-300 text-xs flex items-center gap-1">
-                        <span className="text-gray-500">📅</span> {formatDate(item.deadline)}
+                      <p className="text-slate-700 text-xs flex items-center gap-1">
+                        <span className="text-slate-400">📅</span> {formatDate(item.deadline)}
                       </p>
                       {days !== null && (
                         <p className={`text-xs mt-0.5 ${
-                          isExp ? 'text-red-400' :
-                          days <= 3 ? 'text-red-400' :
-                          days <= 7 ? 'text-amber-400' : 'text-green-400'
+                          isExp ? 'text-red-600' :
+                          days <= 3 ? 'text-red-600' :
+                          days <= 7 ? 'text-amber-600' : 'text-green-600'
                         }`}>
                           {isExp
                             ? `${Math.abs(days)} days ago`
@@ -337,22 +337,22 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                       )}
                     </>
                   ) : (
-                    <span className="text-gray-500 text-xs">No deadline</span>
+                    <span className="text-slate-400 text-xs">No deadline</span>
                   )}
                 </div>
 
                 {/* Views */}
-                <div className="flex items-center gap-1.5 text-sm text-gray-300">
-                  <Eye className="w-3.5 h-3.5 text-gray-500" />
+                <div className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <Eye className="w-3.5 h-3.5 text-slate-400" />
                   {(item.views_count || item.views || 0).toLocaleString()}
                 </div>
 
                 {/* Source */}
                 <div>
                   {item.source_type === 'student' ? (
-                    <span className="text-xs px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-400 font-medium">Student</span>
+                    <span className="text-xs px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">Student</span>
                   ) : (
-                    <span className="text-xs px-2.5 py-1 rounded-md bg-gray-700/60 text-gray-400 font-medium">Admin</span>
+                    <span className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">Admin</span>
                   )}
                 </div>
 
@@ -360,7 +360,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                 <div className="flex items-center gap-1.5 relative">
                   <Link
                     href={`/admin/edit-listing/${item.id}`}
-                    className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors font-medium"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium"
                   >
                     Edit
                   </Link>
@@ -369,7 +369,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                     <button
                       disabled={isLoading}
                       onClick={() => remove(item.id)}
-                      className="px-3 py-1.5 rounded-lg text-xs text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-colors font-medium disabled:opacity-40"
+                      className="px-3 py-1.5 rounded-lg text-xs text-red-600 border border-red-200 hover:bg-red-50 transition-colors font-medium disabled:opacity-40"
                     >
                       Delete
                     </button>
@@ -377,7 +377,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                     <button
                       disabled={isLoading}
                       onClick={() => patch(item.id, { is_published: false }, 'Unpublished')}
-                      className="px-3 py-1.5 rounded-lg text-xs text-amber-400 border border-amber-500/20 hover:bg-amber-500/10 transition-colors font-medium disabled:opacity-40"
+                      className="px-3 py-1.5 rounded-lg text-xs text-amber-700 border border-amber-200 hover:bg-amber-50 transition-colors font-medium disabled:opacity-40"
                     >
                       Unpublish
                     </button>
@@ -385,7 +385,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                     <button
                       disabled={isLoading}
                       onClick={() => patch(item.id, { is_published: true, is_expired: false }, 'Published')}
-                      className="px-3 py-1.5 rounded-lg text-xs text-green-400 border border-green-500/20 hover:bg-green-500/10 transition-colors font-medium disabled:opacity-40"
+                      className="px-3 py-1.5 rounded-lg text-xs text-green-700 border border-green-200 hover:bg-green-50 transition-colors font-medium disabled:opacity-40"
                     >
                       Publish
                     </button>
@@ -395,36 +395,36 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                   <div className="relative">
                     <button
                       onClick={() => setOpenMenu(openMenu === item.id ? null : item.id)}
-                      className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
                     {openMenu === item.id && (
-                      <div className="absolute right-0 top-8 z-50 w-44 bg-[#1a1f2e] rounded-xl border border-white/10 shadow-2xl overflow-hidden">
+                      <div className="absolute right-0 top-8 z-50 w-44 bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
                         <Link
                           href={`/admin/edit-listing/${item.id}`}
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                           onClick={() => setOpenMenu(null)}
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit Listing
                         </Link>
                         {!isExp && (isLive ? (
                           <button
-                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-amber-700 hover:bg-amber-50 transition-colors"
                             onClick={() => { patch(item.id, { is_published: false }, 'Unpublished'); setOpenMenu(null); }}
                           >
                             <ToggleLeft className="w-3.5 h-3.5" /> Unpublish
                           </button>
                         ) : (
                           <button
-                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-green-400 hover:bg-green-500/10 transition-colors"
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-green-700 hover:bg-green-50 transition-colors"
                             onClick={() => { patch(item.id, { is_published: true, is_expired: false }, 'Published'); setOpenMenu(null); }}
                           >
                             <ToggleRight className="w-3.5 h-3.5" /> Publish
                           </button>
                         ))}
                         <button
-                          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-700 hover:bg-red-50 transition-colors"
                           onClick={() => { remove(item.id); setOpenMenu(null); }}
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -445,8 +445,8 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
         )}
 
         {/* Pagination Footer */}
-        <div className="px-5 py-3.5 flex items-center justify-between border-t border-white/10 flex-wrap gap-3">
-          <span className="text-xs text-gray-500">
+        <div className="px-5 py-3.5 flex items-center justify-between border-t border-slate-200 flex-wrap gap-3">
+          <span className="text-xs text-slate-500">
             Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} to{' '}
             {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} results
           </span>
@@ -458,17 +458,17 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
                 key={p}
                 onClick={() => setPage(p)}
                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                  page === p ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  page === p ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 {p}
               </button>
             ))}
-            {totalPages > 5 && page < totalPages - 2 && <span className="text-gray-500 px-1">…</span>}
+            {totalPages > 5 && page < totalPages - 2 && <span className="text-slate-400 px-1">…</span>}
             {totalPages > 5 && !pageNumbers.includes(totalPages) && (
               <button
                 onClick={() => setPage(totalPages)}
-                className="w-8 h-8 rounded-lg text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
               >
                 {totalPages}
               </button>
@@ -480,7 +480,7 @@ export default function ListingsClient({ data: initialData }: { data: any[] }) {
       </div>
 
       {/* Tip */}
-      <p className="text-xs text-gray-500 flex items-center gap-1.5">
+      <p className="text-xs text-slate-500 flex items-center gap-1.5">
         <span>💡</span> Tip: Use filters to quickly find opportunities by status, type, source or date range.
       </p>
 
@@ -496,32 +496,32 @@ function StatCard({
   label, value, sub, color, icon,
 }: { label: string; value: number; sub: string; color: string; icon: string }) {
   const grad: Record<string, string> = {
-    blue:   'from-blue-600/20 to-transparent border-blue-500/20',
-    green:  'from-green-600/20 to-transparent border-green-500/20',
-    yellow: 'from-amber-600/20 to-transparent border-amber-500/20',
-    red:    'from-red-600/20 to-transparent border-red-500/20',
+    blue:   'from-blue-50 to-transparent border-blue-200',
+    green:  'from-green-50 to-transparent border-green-200',
+    yellow: 'from-amber-50 to-transparent border-amber-200',
+    red:    'from-red-50 to-transparent border-red-200',
   };
   const iBg: Record<string, string> = {
-    blue:   'bg-blue-500/20 text-blue-400',
-    green:  'bg-green-500/20 text-green-400',
-    yellow: 'bg-amber-500/20 text-amber-400',
-    red:    'bg-red-500/20 text-red-400',
+    blue:   'bg-blue-100 text-blue-700',
+    green:  'bg-green-100 text-green-700',
+    yellow: 'bg-amber-100 text-amber-700',
+    red:    'bg-red-100 text-red-700',
   };
   return (
     <div className={`admin-card rounded-xl p-5 bg-gradient-to-br border ${grad[color] || grad.blue}`}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-sm text-slate-500">{label}</p>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg ${iBg[color]}`}>{icon}</div>
       </div>
-      <p className="text-3xl font-bold text-white">{value.toLocaleString()}</p>
-      <p className="text-xs text-gray-500 mt-1">{sub}</p>
+      <p className="text-3xl font-bold text-slate-900">{value.toLocaleString()}</p>
+      <p className="text-xs text-slate-400 mt-1">{sub}</p>
     </div>
   );
 }
 
 function StatusDot({ color, label }: { color: 'green' | 'yellow' | 'red'; label: string }) {
-  const text = { green: 'text-green-400', yellow: 'text-amber-400', red: 'text-red-400' };
-  const dot  = { green: 'bg-green-400',   yellow: 'bg-amber-400',   red: 'bg-red-400'   };
+  const text = { green: 'text-green-700', yellow: 'text-amber-700', red: 'text-red-700' };
+  const dot  = { green: 'bg-green-500',   yellow: 'bg-amber-500',   red: 'bg-red-500'   };
   return (
     <span className={`flex items-center gap-1.5 text-xs font-medium ${text[color]}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dot[color]}`} />
@@ -535,7 +535,7 @@ function PgBtn({ children, onClick, disabled }: { children: React.ReactNode; onC
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
     >
       {children}
     </button>

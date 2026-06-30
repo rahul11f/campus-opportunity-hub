@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
-import { parsePdfBuffer } from '@/lib/pipeline/webScraper';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -79,6 +78,18 @@ function extractUrlsFromText(text: string): string[] {
   return Array.from(new Set(matches));
 }
 
+// Playwright-free PDF parser implemented locally
+async function localParsePdfBuffer(nodeBuffer: Buffer): Promise<string> {
+  try {
+    const pdfParse = (await import('pdf-parse')).default;
+    const data = await pdfParse(nodeBuffer);
+    return data.text?.trim() || '';
+  } catch (err) {
+    console.error('Failed parsing PDF buffer:', err);
+    return '';
+  }
+}
+
 async function fetchAndScrapeLink(url: string): Promise<string> {
   const FETCH_TIMEOUT = 3000; // 3 seconds timeout
   try {
@@ -124,8 +135,7 @@ async function fetchAndScrapeLink(url: string): Promise<string> {
     if (contentType.includes('application/pdf') || targetUrl.includes('export=download')) {
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const pdf = await parsePdfBuffer(buffer);
-      return pdf.text || '';
+      return await localParsePdfBuffer(buffer);
     } else {
       const text = await response.text();
       // If it's HTML, parse it with Cheerio
