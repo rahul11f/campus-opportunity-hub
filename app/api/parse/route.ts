@@ -59,6 +59,7 @@ export async function POST(req: Request) {
         const $ = cheerio.load(html);
         $('script, style, nav, footer, header').remove();
         inputContext = $('body').text().replace(/\\s+/g, ' ').trim();
+        inputContext = $('body').text().replace(/\s+/g, ' ').trim();
       } catch (err) {
         return NextResponse.json({ error: 'Failed to fetch URL content.' }, { status: 400 });
       }
@@ -67,6 +68,16 @@ export async function POST(req: Request) {
     } else if (method === 'image') {
       if (!file) {
         return NextResponse.json({ error: 'Image file required.' }, { status: 400 });
+      }
+      
+      let mimeType = file.type;
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+        else if (ext === 'webp') mimeType = 'image/webp';
+        else if (ext === 'heic') mimeType = 'image/heic';
+        else mimeType = 'image/jpeg';
       }
       
       const arrayBuffer = await file.arrayBuffer();
@@ -81,16 +92,23 @@ export async function POST(req: Request) {
       const imagePart = {
         inlineData: {
           data: buffer.toString('base64'),
-          mimeType: file.type
+          mimeType: mimeType
         }
       };
 
       const result = await model.generateContent(["Extract the data from this image.", imagePart]);
       const response = await result.response;
-      let rawJson = response.text().trim();
-      if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
+      const rawText = response.text().trim();
       
-      return NextResponse.json({ opportunity: JSON.parse(rawJson) });
+      // Robust JSON extraction
+      let jsonString = rawText;
+      const firstBrace = rawText.indexOf('{');
+      const lastBrace = rawText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonString = rawText.substring(firstBrace, lastBrace + 1);
+      }
+      
+      return NextResponse.json({ opportunity: JSON.parse(jsonString) });
     } else {
       return NextResponse.json({ error: 'Invalid method.' }, { status: 400 });
     }
@@ -102,10 +120,17 @@ export async function POST(req: Request) {
     });
     const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
     const response = await result.response;
-    let rawJson = response.text().trim();
-    if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
+    const rawText = response.text().trim();
     
-    return NextResponse.json({ opportunity: JSON.parse(rawJson) });
+    // Robust JSON extraction
+    let jsonString = rawText;
+    const firstBrace = rawText.indexOf('{');
+    const lastBrace = rawText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      jsonString = rawText.substring(firstBrace, lastBrace + 1);
+    }
+    
+    return NextResponse.json({ opportunity: JSON.parse(jsonString) });
 
   } catch (error: any) {
     console.error('Parser Error:', error);

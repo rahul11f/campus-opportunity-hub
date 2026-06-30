@@ -40,8 +40,9 @@ export async function POST() {
       .from('student_points')
       .update({
         total_points: 0,
-        approved_contributions: 0,
-        pending_contributions: 0
+        opportunities_submitted: 0,
+        corrections_submitted: 0,
+        approved_contributions: 0
       })
       .not('total_points', 'is', null);
 

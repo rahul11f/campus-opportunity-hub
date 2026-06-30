@@ -156,12 +156,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       // Real-time subscription to contribution changes
       channel = supabase
         .channel('admin-layout-contrib')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_contributions' }, async () => {
-          const { count: c } = await supabase
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_contributions' }, (payload) => {
+          supabase
             .from('student_contributions')
             .select('*', { count: 'exact', head: true })
-            .eq('status', 'pending');
-          setPendingCount(c || 0);
+            .eq('status', 'pending')
+            .then(({ count: c }) => {
+              setPendingCount(c || 0);
+            });
         })
         .subscribe();
     }
