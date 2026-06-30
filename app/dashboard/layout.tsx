@@ -194,8 +194,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile Sidebar */}
       {mobileOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed top-0 left-0 bottom-0 z-50 w-64 bg-card border-r border-border md:hidden flex flex-col shadow-2xl">
+          <div className="fixed inset-0 z-[60] bg-black/60 md:hidden" onClick={() => setMobileOpen(false)} />
+          <aside className="fixed top-0 left-0 bottom-0 z-[70] w-64 bg-card border-r border-border md:hidden flex flex-col shadow-2xl">
             <button
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-accent"
@@ -217,7 +217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="font-semibold text-sm">Student Dashboard</span>
         </div>
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-24 md:pb-0">
           {children}
         </main>
       </div>

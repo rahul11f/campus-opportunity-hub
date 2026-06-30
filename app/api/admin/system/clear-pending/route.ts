@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 
-export async function POST() {
+export async function GET() {
   try {
-    // 1. Verify admin session
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,29 +30,22 @@ export async function POST() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // 2. Perform the reset using service client
     const serviceClient = createServiceClient();
     
-    // We update rather than delete so we don't break foreign keys or references, just zero out points.
-    // If they have no rows, we don't need to do anything.
+    // Clear pending contributions
     const { error } = await serviceClient
-      .from('student_points')
-      .update({
-        total_points: 0,
-        approved_contributions: 0,
-        pending_contributions: 0
-      })
-      .not('total_points', 'is', null);
+      .from('student_contributions')
+      .update({ status: 'rejected' })
+      .eq('status', 'pending');
 
     if (error) {
-      console.error('Reset Leaderboard Error:', error);
-      return NextResponse.json({ error: error.message || 'Database error while resetting leaderboard' }, { status: 500 });
+      console.error('Clear Pending Error:', error);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
-
+    return NextResponse.json({ success: true, message: 'Pending contributions cleared.' });
   } catch (err: any) {
-    console.error('Reset Leaderboard Exception:', err);
+    console.error('Clear Pending Exception:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

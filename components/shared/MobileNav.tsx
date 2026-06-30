@@ -15,7 +15,7 @@ export function MobileNav() {
     { name: 'Profile', href: '/dashboard', icon: User },
   ];
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/admin')) {
     return null;
   }
 

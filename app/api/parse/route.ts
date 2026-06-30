@@ -73,7 +73,10 @@ export async function POST(req: Request) {
       const buffer = Buffer.from(arrayBuffer);
       
       // Use Gemini Vision
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: SYSTEM_PROMPT
+      });
       
       const imagePart = {
         inlineData: {
@@ -82,7 +85,7 @@ export async function POST(req: Request) {
         }
       };
 
-      const result = await model.generateContent([SYSTEM_PROMPT, "Extract the data from this image.", imagePart]);
+      const result = await model.generateContent(["Extract the data from this image.", imagePart]);
       const response = await result.response;
       let rawJson = response.text().trim();
       if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
@@ -93,8 +96,11 @@ export async function POST(req: Request) {
     }
 
     // Process Text/URL/JSON
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const result = await model.generateContent([SYSTEM_PROMPT, `INPUT DATA: \n${inputContext}`]);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      systemInstruction: SYSTEM_PROMPT
+    });
+    const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
     const response = await result.response;
     let rawJson = response.text().trim();
     if (rawJson.startsWith('```json')) rawJson = rawJson.replace(/```json/g, '').replace(/```/g, '');
