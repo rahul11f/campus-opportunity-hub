@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
-import { expandUrl } from '@/lib/pipeline/urlExpander';
-import { classifyUrl } from '@/lib/pipeline/contentClassifier';
-import { scrapeGoogleDoc, fetchPdfText, scrapeWithCheerio } from '@/lib/pipeline/webScraper';
+import { parsePdfBuffer } from '@/lib/pipeline/webScraper';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -82,6 +80,7 @@ function extractUrlsFromText(text: string): string[] {
 }
 
 async function fetchAndScrapeLink(url: string): Promise<string> {
+  const FETCH_TIMEOUT = 3000; // 3 seconds timeout
   try {
     let targetUrl = url;
     
@@ -94,18 +93,48 @@ async function fetchAndScrapeLink(url: string): Promise<string> {
       }
     }
 
-    const expanded = await expandUrl(targetUrl);
-    const classified = classifyUrl(expanded);
-    console.log(`Scraping link: ${url} -> expanded: ${expanded} -> classified: ${classified}`);
+    // Google Doc export conversion
+    if (targetUrl.includes('docs.google.com/document')) {
+      targetUrl = targetUrl
+        .replace(/\/edit.*$/, '/export?format=txt')
+        .replace(/\/pub.*$/, '/export?format=txt')
+        .replace(/\/view.*$/, '/export?format=txt');
+    }
 
-    if (classified === 'google_doc') {
-      return await scrapeGoogleDoc(expanded);
-    } else if (classified === 'pdf' || expanded.includes('export=download')) {
-      const pdf = await fetchPdfText(expanded);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const response = await fetch(targetUrl, {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Fetch failed for URL ${url} with status: ${response.status}`);
+      return '';
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/pdf') || targetUrl.includes('export=download')) {
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const pdf = await parsePdfBuffer(buffer);
       return pdf.text || '';
-    } else if (classified === 'html') {
-      const res = await scrapeWithCheerio(expanded);
-      return res.text || '';
+    } else {
+      const text = await response.text();
+      // If it's HTML, parse it with Cheerio
+      if (contentType.includes('text/html') || text.trim().startsWith('<')) {
+        const $ = cheerio.load(text);
+        $('script, style, nav, footer, header, iframe').remove();
+        return $('body').text().replace(/\s+/g, ' ').trim();
+      }
+      return text;
     }
   } catch (err) {
     console.error(`Failed to scrape link ${url}:`, err);
