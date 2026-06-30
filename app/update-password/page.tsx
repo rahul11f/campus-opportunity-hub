@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, KeyRound, Lock } from 'lucide-react';
 import Link from 'next/link';
@@ -11,6 +11,15 @@ export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) {
+        setUserEmail(data.user.email);
+      }
+    });
+  }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +40,13 @@ export default function UpdatePasswordPage() {
       }
       
       toast.success('Password updated successfully!');
-      window.location.href = '/dashboard';
+      
+      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim());
+      if (userEmail && adminEmails.includes(userEmail)) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/dashboard';
+      }
     } finally {
       setLoading(false);
     }
@@ -56,6 +71,11 @@ export default function UpdatePasswordPage() {
           <p className="text-sm text-muted-foreground font-medium">
             Your identity has been verified. Please enter a strong new password below.
           </p>
+          {userEmail && (
+            <p className="text-xs font-bold text-primary bg-primary/10 py-1.5 px-3 rounded-full inline-block mt-4">
+              {userEmail}
+            </p>
+          )}
         </div>
 
         {error && (
