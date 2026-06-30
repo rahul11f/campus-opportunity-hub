@@ -66,7 +66,20 @@ export async function POST(req: NextRequest) {
 
     // Generate the appropriate token link
     let generateType: 'magiclink' | 'recovery' = type === 'recovery' ? 'recovery' : 'magiclink';
-    let redirectTo = type === 'recovery' ? `${siteUrl}/update-password` : `${siteUrl}/dashboard`;
+
+    // Check if this email is an admin for proper routing
+    const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '')
+      .split(',').map(e => e.trim()).filter(Boolean);
+    const isAdminEmail = adminEmails.includes(email.toLowerCase().trim());
+
+    let redirectTo: string;
+    if (type === 'recovery') {
+      redirectTo = `${siteUrl}/update-password`;
+    } else if (isAdminEmail) {
+      redirectTo = `${siteUrl}/admin/dashboard`;
+    } else {
+      redirectTo = `${siteUrl}/dashboard`;
+    }
 
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: generateType,

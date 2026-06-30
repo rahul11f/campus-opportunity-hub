@@ -127,6 +127,8 @@ export function StudentAuthForm() {
           setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
+        // Sign out any stale session before following the magic link
+        await supabase.auth.signOut();
         window.location.href = respData.redirectUrl;
       }
       else if (mode === 'login') {
@@ -171,6 +173,8 @@ export function StudentAuthForm() {
           setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
+        // Sign out any stale session before following the magic link
+        await supabase.auth.signOut();
         window.location.href = respData.redirectUrl;
       }
       else if (mode === 'forgot-password') {
@@ -199,6 +203,8 @@ export function StudentAuthForm() {
           setFieldErrors({ general: respData.error || 'Verification failed' });
           return;
         }
+        // Sign out any stale session before following the recovery link
+        await supabase.auth.signOut();
         window.location.href = respData.redirectUrl;
       }
     } finally {
