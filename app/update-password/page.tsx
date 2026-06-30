@@ -1,43 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect, Suspense } from 'react';
 import { ArrowLeft, KeyRound, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 
-export default function UpdatePasswordPage() {
-  const supabase = createClient();
+function UpdatePasswordContent() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    // Wait for the recovery session to be established from the URL hash
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        if (session?.user?.email) {
-          setUserEmail(session.user.email);
-          setReady(true);
-        }
-      }
-    });
-
-    // Also check if there's already a valid session (e.g. page refresh)
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) {
-        setUserEmail(data.user.email);
-        setReady(true);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  // If there's no token in the URL, this page was accessed incorrectly
+  if (!token) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold">
+          Invalid or missing recovery token.
+        </div>
+        <Link href="/login" className="text-primary hover:underline text-sm font-medium">
+          Return to login
+        </Link>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,27 +40,86 @@ export default function UpdatePasswordPage() {
     setError('');
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      
-      if (error) {
-        setError(error.message);
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to update password');
         return;
       }
       
       toast.success('Password updated successfully!');
       
-      // Route to the correct dashboard based on who this user is
-      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim()).filter(Boolean);
-      if (userEmail && adminEmails.includes(userEmail)) {
-        window.location.href = '/admin/dashboard';
-      } else {
-        window.location.href = '/dashboard';
-      }
+      // Since the API reset the password via the Admin SDK, we now need to actually log the user in
+      // Because we bypassed the frontend supabase session! We can just direct them to login, or login automatically.
+      // Easiest is to send them back to login page, since we don't have their session on the client.
+      toast.info('Please log in with your new password.');
+      setTimeout(() => {
+        window.location.href = data.redirectTo || '/login';
+      }, 1500);
+
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   }
 
+  return (
+    <>
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold flex items-center justify-center text-center">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">New Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
+              className={`w-full pl-4 pr-20 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${error ? 'border-destructive focus:ring-destructive/50' : ''}`}
+              placeholder="••••••••"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(!showPassword)}
+                className="p-1 rounded hover:bg-accent transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+              </button>
+              <Lock className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full flex items-center justify-center py-3.5 rounded-xl bg-foreground text-background font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg mt-2"
+        >
+          {loading ? 'Updating...' : 'Update Password'}
+        </button>
+      </form>
+    </>
+  );
+}
+
+export default function UpdatePasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background relative py-12">
       <Link href="/login" className="absolute top-6 left-6 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -90,65 +139,16 @@ export default function UpdatePasswordPage() {
           <p className="text-sm text-muted-foreground font-medium">
             Your identity has been verified. Please enter a strong new password below.
           </p>
-          {userEmail && (
-            <p className="text-xs font-bold text-primary bg-primary/10 py-1.5 px-3 rounded-full inline-block mt-4">
-              {userEmail}
-            </p>
-          )}
         </div>
 
-        {!ready ? (
+        <Suspense fallback={
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground font-medium">Verifying your identity...</p>
+            <p className="text-sm text-muted-foreground font-medium">Loading...</p>
           </div>
-        ) : (
-          <>
-            {error && (
-              <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold flex items-center justify-center text-center">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError('');
-                    }}
-                    className={`w-full pl-4 pr-20 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${error ? 'border-destructive focus:ring-destructive/50' : ''}`}
-                    placeholder="••••••••"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="p-1 rounded hover:bg-accent transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                    </button>
-                    <Lock className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center py-3.5 rounded-xl bg-foreground text-background font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg mt-2"
-              >
-                {loading ? 'Updating...' : 'Update Password'}
-              </button>
-            </form>
-          </>
-        )}
+        }>
+          <UpdatePasswordContent />
+        </Suspense>
       </div>
     </div>
   );

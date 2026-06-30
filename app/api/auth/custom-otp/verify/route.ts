@@ -64,25 +64,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate the appropriate token link
-    let generateType: 'magiclink' | 'recovery' = type === 'recovery' ? 'recovery' : 'magiclink';
+    // For password recovery, skip the Supabase action_link entirely.
+    // Instead, generate a short-lived recovery token stored in Redis.
+    if (type === 'recovery') {
+      const crypto = await import('crypto');
+      const recoveryToken = crypto.randomBytes(32).toString('hex');
+      
+      // Store token → email mapping in Redis (expires in 10 minutes)
+      await redis.set(`recovery:${recoveryToken}`, email, { ex: 600 });
+      
+      return NextResponse.json({
+        success: true,
+        redirectUrl: `/update-password?token=${recoveryToken}`,
+      });
+    }
 
-    // Check if this email is an admin for proper routing
+    // For login/signup flows, continue using the Supabase magic link
     const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '')
       .split(',').map(e => e.trim()).filter(Boolean);
     const isAdminEmail = adminEmails.includes(email.toLowerCase().trim());
 
-    let redirectTo: string;
-    if (type === 'recovery') {
-      redirectTo = `${siteUrl}/update-password`;
-    } else if (isAdminEmail) {
-      redirectTo = `${siteUrl}/admin/dashboard`;
-    } else {
-      redirectTo = `${siteUrl}/dashboard`;
-    }
+    const redirectTo = isAdminEmail
+      ? `${siteUrl}/admin/dashboard`
+      : `${siteUrl}/dashboard`;
 
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: generateType,
+      type: 'magiclink',
       email,
       options: {
         redirectTo,
