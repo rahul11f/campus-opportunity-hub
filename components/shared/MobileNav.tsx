@@ -15,6 +15,10 @@ export function MobileNav() {
     { name: 'Profile', href: '/dashboard', icon: User },
   ];
 
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <div className="md:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pb-safe pointer-events-none">
       <nav className="flex justify-around items-center h-16 w-full max-w-[320px] bg-background/80 dark:bg-black/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-full shadow-2xl pointer-events-auto overflow-hidden">

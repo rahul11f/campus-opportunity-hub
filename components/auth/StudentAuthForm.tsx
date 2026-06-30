@@ -71,11 +71,12 @@ export function StudentAuthForm() {
     setLoading(true);
     setFieldErrors({});
     try {
+      const cleanEmail = email.toLowerCase().trim();
       if (mode === 'signup-verify' || mode === 'forgot-password-verify' || mode === 'otp-verify') {
         const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: cleanEmail })
         });
         if (!res.ok) {
           const err = await res.json();
@@ -99,11 +100,12 @@ export function StudentAuthForm() {
     setFieldErrors({});
 
     try {
+      const cleanEmail = email.toLowerCase().trim();
       if (mode === 'signup') {
         const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: cleanEmail })
         });
         const respData = await res.json();
         if (!res.ok) {
@@ -128,19 +130,25 @@ export function StudentAuthForm() {
         window.location.href = respData.redirectUrl;
       }
       else if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
           if (error.message.toLowerCase().includes('password')) setFieldErrors({ password: 'Invalid password' });
           else setFieldErrors({ general: error.message });
           return;
         }
-        window.location.href = '/dashboard';
+        toast.success('Logged in successfully!');
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim());
+        if (adminEmails.includes(cleanEmail)) {
+          window.location.href = '/admin/dashboard';
+        } else {
+          window.location.href = '/dashboard';
+        }
       }
       else if (mode === 'otp') {
         const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: cleanEmail })
         });
         const respData = await res.json();
         
@@ -156,7 +164,7 @@ export function StudentAuthForm() {
         const res = await fetch('/api/auth/custom-otp/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: otpCode, type: 'login' })
+          body: JSON.stringify({ email: cleanEmail, otp: otpCode, type: 'login' })
         });
         const respData = await res.json();
         if (!res.ok) {
@@ -169,7 +177,7 @@ export function StudentAuthForm() {
         const res = await fetch('/api/auth/custom-otp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: cleanEmail })
         });
         const respData = await res.json();
         if (!res.ok) {
@@ -184,7 +192,7 @@ export function StudentAuthForm() {
         const res = await fetch('/api/auth/custom-otp/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: otpCode, type: 'recovery' })
+          body: JSON.stringify({ email: cleanEmail, otp: otpCode, type: 'recovery' })
         });
         const respData = await res.json();
         if (!res.ok) {
@@ -264,6 +272,9 @@ export function StudentAuthForm() {
                   }}
                   className={`w-full pl-4 pr-10 py-3.5 rounded-xl border bg-background/50 focus:bg-background focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium outline-none ${fieldErrors.email ? 'border-destructive focus:ring-destructive/50' : ''}`}
                   placeholder="student@university.edu"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="email"
                 />
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               </div>
