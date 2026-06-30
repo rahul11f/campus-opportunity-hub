@@ -49,19 +49,19 @@ export function AdminControlCenter() {
             disabled={isSaving}
             className={`text-left p-4 rounded-xl border transition-all duration-200 ${
               isOn
-                ? 'bg-blue-600/20 border-blue-500/40 hover:bg-blue-600/30'
-                : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]'
+                ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
             } ${isSaving ? 'opacity-60 cursor-wait' : ''}`}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg">{icon}</span>
               {/* Toggle indicator */}
-              <div className={`w-8 h-4 rounded-full transition-colors relative ${isOn ? 'bg-blue-500' : 'bg-gray-700'}`}>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${isOn ? 'bg-blue-500' : 'bg-slate-300'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isOn ? 'left-4' : 'left-0.5'}`} />
               </div>
             </div>
-            <p className={`text-sm font-semibold ${isOn ? 'text-blue-300' : 'text-white'}`}>{label}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{description}</p>
+            <p className={`text-sm font-semibold ${isOn ? 'text-blue-700' : 'text-slate-700'}`}>{label}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{description}</p>
           </button>
         );
       })}

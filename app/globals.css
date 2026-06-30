@@ -136,15 +136,15 @@
    Admin Panel Theme Helpers
    ═══════════════════════════════════════════════ */
 .admin-bg {
-  @apply bg-[#0b1120] text-slate-50;
+  @apply bg-slate-50 text-slate-900;
 }
 
 .admin-sidebar {
-  @apply bg-[#111827] border-r border-white/10;
+  @apply bg-white border-r border-slate-200;
 }
 
 .admin-card {
-  @apply bg-[#111827] border border-white/10 shadow-sm;
+  @apply bg-white border border-slate-200 shadow-sm;
 }
 
 /* Table grid: Opportunity | Type | Status | Deadline | Views | Source | Actions (7 cols) */
@@ -167,8 +167,4 @@
   }
 }
 
-/* Admin page padding compensates for fixed sidebar */
-@media (max-width: 768px) {
-  .admin-sidebar { display: none; }
-  .admin-sidebar + main { margin-left: 0 !important; }
-}
+

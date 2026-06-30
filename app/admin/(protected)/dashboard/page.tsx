@@ -90,10 +90,10 @@ export default function AdminDashboardPage() {
   if (!data) {
     return (
       <div className="p-6 space-y-6">
-        <div className="h-10 w-64 bg-white/5 rounded-xl animate-pulse" />
+        <div className="h-10 w-64 bg-slate-200 rounded-xl animate-pulse" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-32 bg-white/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-32 bg-slate-200 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -109,8 +109,8 @@ export default function AdminDashboardPage() {
       <motion.div variants={itemVariants} className="flex items-start justify-between gap-4 relative z-10">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-transparent blur-3xl -z-10 rounded-full" />
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Admin Dashboard</h1>
-          <p className="text-gray-400 text-sm mt-1 flex items-center gap-2">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Live Platform Overview & Analytics
           </p>
@@ -136,12 +136,12 @@ export default function AdminDashboardPage() {
       {/* Middle Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6 border border-white/5 bg-background/50 backdrop-blur-xl shadow-2xl">
+        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
               <Zap className="w-5 h-5" />
             </div>
-            <h2 className="text-lg font-bold text-white">Quick Actions</h2>
+            <h2 className="text-lg font-bold text-slate-900">Quick Actions</h2>
           </div>
           <div className="space-y-3">
             <QuickAction href="/admin/parser" icon={<Bot className="w-4 h-4" />} label="AI Parser Dashboard" color="indigo" badge="New" />
@@ -153,26 +153,26 @@ export default function AdminDashboardPage() {
         </motion.div>
 
         {/* Moderation Analytics */}
-        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6 border border-white/5 bg-background/50 backdrop-blur-xl shadow-2xl">
+        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
               <BarChart3 className="w-5 h-5" />
             </div>
-            <h2 className="text-lg font-bold text-white">Analytics</h2>
+            <h2 className="text-lg font-bold text-slate-900">Analytics</h2>
           </div>
           <div className="space-y-4">
             <Metric label="Approval Rate" value={`${approvalRate}%`} accent="emerald" />
             <Metric label="Total Moderated" value={totalModerated} accent="blue" />
             <Metric label="Pending Queue" value={data.pending} accent={data.pending > 5 ? 'rose' : 'amber'} />
           </div>
-          <div className="mt-6 pt-5 border-t border-white/10">
-            <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider">Listing Status Breakdown</p>
-            <div className="flex gap-2 h-2.5 rounded-full overflow-hidden bg-white/5">
+          <div className="mt-6 pt-5 border-t border-slate-200">
+            <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Listing Status Breakdown</p>
+            <div className="flex gap-2 h-2.5 rounded-full overflow-hidden bg-slate-100">
               <div className="bg-emerald-500 transition-all duration-1000" style={{ width: `${data.listings > 0 ? (data.liveListings/data.listings)*100 : 0}%` }} />
               <div className="bg-amber-500 transition-all duration-1000" style={{ width: `${data.listings > 0 ? (data.draftListings/data.listings)*100 : 0}%` }} />
               <div className="bg-rose-500 transition-all duration-1000"   style={{ width: `${data.listings > 0 ? (data.expiredListings/data.listings)*100 : 0}%` }} />
             </div>
-            <div className="flex gap-4 mt-3 text-xs font-medium text-gray-400">
+            <div className="flex gap-4 mt-3 text-xs font-medium text-slate-500">
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Live</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Draft</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Expired</span>
@@ -181,36 +181,36 @@ export default function AdminDashboardPage() {
         </motion.div>
 
         {/* Leaderboard */}
-        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6 border border-white/5 bg-background/50 backdrop-blur-xl shadow-2xl">
+        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                 <TrendingUp className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-white">Top Contributors</h2>
+              <h2 className="text-lg font-bold text-slate-900">Top Contributors</h2>
             </div>
             <Link href="/admin/leaderboard" className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1">
               View all <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           {data.leaderboard.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-8">No contributors yet</p>
+            <p className="text-sm text-slate-400 text-center py-8">No contributors yet</p>
           ) : (
             <div className="space-y-3">
               {data.leaderboard.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors">
+                <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                   <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
                     i === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
                     i === 1 ? 'bg-gray-400/20 text-gray-400 border border-gray-400/20' :
                     i === 2 ? 'bg-orange-600/20 text-orange-400 border border-orange-600/20' : 'bg-white/5 text-gray-500'
                   }`}>#{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
                       {item.student_name || item.user_id?.slice(0, 8) || 'Anonymous'}
                     </p>
-                    <p className="text-[11px] font-medium text-gray-500">{item.approved_contributions || 0} contributions</p>
+                    <p className="text-[11px] font-medium text-slate-400">{item.approved_contributions || 0} contributions</p>
                   </div>
-                  <span className="text-sm font-black text-amber-400">{item.total_points}</span>
+                  <span className="text-sm font-black text-amber-600">{item.total_points}</span>
                 </div>
               ))}
             </div>
@@ -221,30 +221,30 @@ export default function AdminDashboardPage() {
       {/* Bottom Row */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Contributions */}
-        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6 border border-white/5 bg-background/50 backdrop-blur-xl shadow-2xl">
+        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
                 <Activity className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-white">Recent Activity</h2>
+              <h2 className="text-lg font-bold text-slate-900">Recent Activity</h2>
             </div>
             <Link href="/admin/contributions" className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1">
               View all <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-8">No activity yet</p>
+            <p className="text-sm text-slate-400 text-center py-8">No activity yet</p>
           ) : (
             <div className="space-y-3">
               {data.recent.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 hover:border-white/10 hover:bg-white/[0.02] transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
                     <MessageSquare className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{item.title || 'Untitled'}</p>
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{item.contributor_name || 'Anonymous'}</p>
+                    <p className="text-sm font-semibold text-slate-900 truncate">{item.title || 'Untitled'}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{item.contributor_name || 'Anonymous'}</p>
                   </div>
                   <StatusChip status={item.status} />
                 </div>
@@ -254,12 +254,12 @@ export default function AdminDashboardPage() {
         </motion.div>
 
         {/* Feature Controls */}
-        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6 border border-white/5 bg-background/50 backdrop-blur-xl shadow-2xl">
+        <motion.div variants={itemVariants} className="admin-card rounded-3xl p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
               <Zap className="w-5 h-5" />
             </div>
-            <h2 className="text-lg font-bold text-white">System Controls</h2>
+            <h2 className="text-lg font-bold text-slate-900">System Controls</h2>
           </div>
           <AdminControlCenter />
         </motion.div>
@@ -289,9 +289,9 @@ function DashCard({ icon, label, value, color, trend }: {
       <div className="relative z-10 flex flex-col h-full justify-between">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${s.bg} ${s.icon}`}>{icon}</div>
         <div>
-          <p className="text-3xl font-black text-white">{value.toLocaleString()}</p>
-          <p className="text-sm font-semibold text-gray-400 mt-1">{label}</p>
-          {trend && <p className="text-[11px] font-medium text-gray-500 mt-1">{trend}</p>}
+          <p className="text-3xl font-black text-slate-900">{value.toLocaleString()}</p>
+          <p className="text-sm font-semibold text-slate-500 mt-1">{label}</p>
+          {trend && <p className="text-[11px] font-medium text-slate-400 mt-1">{trend}</p>}
         </div>
       </div>
     </div>
@@ -303,9 +303,9 @@ function Metric({ label, value, accent }: { label: string; value: string | numbe
     emerald: 'text-emerald-400', blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400',
   };
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-      <span className="text-sm font-medium text-gray-400">{label}</span>
-      <span className={`text-xl font-black ${accentMap[accent] || 'text-white'}`}>{value}</span>
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
+      <span className="text-sm font-medium text-slate-500">{label}</span>
+      <span className={`text-xl font-black ${accentMap[accent] || 'text-slate-900'}`}>{value}</span>
     </div>
   );
 }
@@ -321,10 +321,10 @@ function QuickAction({ href, icon, label, color, badge }: {
           ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 hover:-translate-y-0.5'
           : color === 'indigo'
           ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 hover:-translate-y-0.5'
-          : 'bg-white/[0.02] border-white/5 text-gray-300 hover:bg-white/[0.06] hover:text-white'
+          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
       }`}
     >
-      <span className={color === 'blue' || color === 'indigo' ? 'text-white' : 'text-gray-400 group-hover:text-white'}>{icon}</span>
+      <span className={color === 'blue' || color === 'indigo' ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'}>{icon}</span>
       <span className="text-sm font-semibold flex-1">{label}</span>
       {badge !== undefined && (
         <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black tracking-wider uppercase flex items-center justify-center shadow-sm">

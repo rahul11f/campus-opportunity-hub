@@ -15,6 +15,8 @@ import {
   Bot,
   Megaphone,
   Settings,
+  Menu,
+  X,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
@@ -41,29 +43,29 @@ const navItems = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-function AdminSidebar({ pendingCount, userEmail }: { pendingCount: number; userEmail?: string }) {
+function SidebarContent({ pendingCount, userEmail }: { pendingCount: number; userEmail?: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="admin-sidebar w-64 min-h-screen flex flex-col shrink-0 fixed left-0 top-0 bottom-0 z-40">
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-slate-200">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-sm font-bold text-white block">Campus Hub</span>
-            <span className="text-xs text-gray-400">Admin Panel</span>
+            <span className="text-sm font-bold text-slate-900 block">Campus Hub</span>
+            <span className="text-xs text-slate-500">Admin Panel</span>
           </div>
         </Link>
       </div>
 
       {/* Back to website */}
-      <div className="px-3 pt-3 pb-2 border-b border-white/10">
+      <div className="px-3 pt-3 pb-2 border-b border-slate-200">
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 border border-white/10 hover:bg-white/5 hover:text-white transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Website
@@ -81,7 +83,7 @@ function AdminSidebar({ pendingCount, userEmail }: { pendingCount: number; userE
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                 active
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               <Icon className="w-4 h-4 shrink-0" />
@@ -97,14 +99,14 @@ function AdminSidebar({ pendingCount, userEmail }: { pendingCount: number; userE
       </nav>
 
       {/* User */}
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-slate-200">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
           <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
             {userEmail?.charAt(0)?.toUpperCase() || 'A'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-white truncate">{userEmail || 'Admin'}</p>
-            <p className="text-[11px] text-gray-400">Administrator</p>
+            <p className="text-xs font-medium text-slate-900 truncate">{userEmail || 'Admin'}</p>
+            <p className="text-[11px] text-slate-500">Administrator</p>
           </div>
         </div>
         <button
@@ -113,13 +115,13 @@ function AdminSidebar({ pendingCount, userEmail }: { pendingCount: number; userE
             await supabase.auth.signOut();
             window.location.href = '/admin/login';
           }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sign Out
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -127,6 +129,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userEmail, setUserEmail] = useState<string | undefined>();
   const [pendingCount, setPendingCount] = useState(0);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const supabase = createClient();
@@ -171,6 +175,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, []);
 
+  // Close mobile sidebar on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
   if (authorized === null) {
     return (
       <div className="min-h-screen admin-bg flex items-center justify-center">
@@ -181,8 +188,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen admin-bg">
-      <AdminSidebar pendingCount={pendingCount} userEmail={userEmail} />
-      <main className="flex-1 ml-64 overflow-x-hidden overflow-y-auto min-h-screen">
+      {/* Desktop Sidebar */}
+      <aside className="admin-sidebar w-64 min-h-screen hidden md:flex flex-col shrink-0 fixed left-0 top-0 bottom-0 z-40">
+        <SidebarContent pendingCount={pendingCount} userEmail={userEmail} />
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />
+          <aside className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-white border-r border-slate-200 md:hidden flex flex-col shadow-2xl">
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100"
+            >
+              <X className="w-4 h-4 text-slate-500" />
+            </button>
+            <SidebarContent pendingCount={pendingCount} userEmail={userEmail} />
+          </aside>
+        </>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 md:ml-64 overflow-x-hidden overflow-y-auto min-h-screen">
+        {/* Mobile top bar */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white sticky top-0 z-20">
+          <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-slate-100">
+            <Menu className="w-5 h-5 text-slate-700" />
+          </button>
+          <span className="font-semibold text-sm text-slate-900">Admin Panel</span>
+        </div>
         {children}
       </main>
     </div>

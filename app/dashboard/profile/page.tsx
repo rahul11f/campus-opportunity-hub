@@ -60,8 +60,18 @@ export default function ProfilePage() {
     if (!user) { setSaving(false); return; }
 
     const upsertData = {
-      ...profile,
       user_id: user.id,
+      full_name: profile.full_name || null,
+      email: profile.email || userEmail || null,
+      college: profile.college || null,
+      branch: profile.branch || null,
+      batch: profile.batch || null,
+      cgpa: profile.cgpa || null,
+      skills: profile.skills || null,
+      phone: profile.phone || null,
+      linkedin: profile.linkedin || null,
+      github: profile.github || null,
+      bio: profile.bio || null,
       updated_at: new Date().toISOString(),
     };
 
