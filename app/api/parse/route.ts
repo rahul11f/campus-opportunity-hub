@@ -1,42 +1,117 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
+import { expandUrl } from '@/lib/pipeline/urlExpander';
+import { classifyUrl } from '@/lib/pipeline/contentClassifier';
+import { scrapeGoogleDoc, fetchPdfText, scrapeWithCheerio } from '@/lib/pipeline/webScraper';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const SYSTEM_PROMPT = `
 You are an expert AI recruitment data parser.
 Your task is to extract information from the given text/json/image data and map it EXACTLY to the following JSON structure.
-Do not hallucinate. If a value is missing, return null for it.
+Do not hallucinate. If a value is missing, return "Not Mentioned" or null where appropriate.
 
 Required JSON Schema:
 {
-  "company": "Company Name",
-  "role": "Job Title/Role",
-  "type": "placement" | "internship" | "hackathon" | "scholarship" | "campus_drive" | "other",
-  "salary": "String describing salary or stipend",
-  "location": "Job Location",
-  "apply_link": "URL to apply",
-  "instructions": "Any additional notes",
-  "deadline": "ISO date string or null",
-  "tags": ["tag1", "tag2"],
-  "skills": ["skill1", "skill2"],
-  "responsibilities": ["resp1", "resp2"],
-  "eligibility": {
-    "branches": ["CSE", "IT", "ECE"],
-    "cgpa": "Minimum CGPA/Percentage",
-    "backlog": "Backlog criteria",
-    "batch": "Passing year e.g. 2024",
-    "other": "Any other eligibility criteria"
+  "basic_information": {
+    "company_name": "string | Not Mentioned",
+    "company_logo": "string | Not Mentioned",
+    "opportunity_type": "string | Not Mentioned",
+    "round_name": "string | Not Mentioned",
+    "verified_status": "string | Not Mentioned",
+    "application_deadline": "string | Not Mentioned",
+    "jd_link": "string | Not Mentioned"
   },
-  "interview_process": {
-    "rounds": 3,
-    "description": ["Online Test", "Technical Interview", "HR Round"]
+  "eligibility": {
+    "educational_qualification": "string | Not Mentioned",
+    "eligible_branches": "string | Not Mentioned",
+    "eligible_streams": "string | Not Mentioned",
+    "passing_batch": "string | Not Mentioned",
+    "minimum_cgpa_percentage": "string | Not Mentioned",
+    "cutoff_criteria": "string | Not Mentioned",
+    "active_backlogs_allowed": "string | Not Mentioned",
+    "gender_eligibility": "string | Not Mentioned"
+  },
+  "job_details": {
+    "job_role": "string | Not Mentioned",
+    "salary_ctc": "string | Not Mentioned",
+    "stipend": "string | Not Mentioned",
+    "location": "string | Not Mentioned",
+    "work_mode": "string | Not Mentioned",
+    "employment_type": "string | Not Mentioned"
+  },
+  "recruitment_process": {
+    "hiring_process": "string | Not Mentioned",
+    "number_of_rounds": "string | Not Mentioned",
+    "elimination_rounds": "string | Not Mentioned"
+  },
+  "schedule": {
+    "event_date": "string | Not Mentioned",
+    "time": "string | Not Mentioned",
+    "venue": "string | Not Mentioned",
+    "mode": "string | Not Mentioned"
+  },
+  "communication": {
+    "communication_channel": "string | Not Mentioned",
+    "check_inbox": "string | Not Mentioned",
+    "check_spam_folder": "string | Not Mentioned",
+    "timing_shared_by": "string | Not Mentioned",
+    "additional_instructions": "string | Not Mentioned"
+  },
+  "attachments": {
+    "jd_link": "string | Not Mentioned",
+    "student_eligible_list": "string | Not Mentioned",
+    "additional_documents": "string | Not Mentioned"
+  },
+  "source_metadata": {
+    "issued_by": "string | Not Mentioned",
+    "institution": "string | Not Mentioned",
+    "reminder_notice": "string | Not Mentioned",
+    "notice_type": "string | Not Mentioned"
   }
 }
 
 Return strictly the JSON object. Do not wrap it in markdown code blocks (\`\`\`json). Just the raw JSON.
 `;
+
+function extractUrlsFromText(text: string): string[] {
+  const urlRegex = /https?:\/\/[^\s"'><\)\],]+/g;
+  const matches = text.match(urlRegex) || [];
+  return Array.from(new Set(matches));
+}
+
+async function fetchAndScrapeLink(url: string): Promise<string> {
+  try {
+    let targetUrl = url;
+    
+    // Google Drive direct download URL conversion
+    if (url.includes('drive.google.com')) {
+      const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
+      const match = url.match(driveRegex);
+      if (match) {
+        targetUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+
+    const expanded = await expandUrl(targetUrl);
+    const classified = classifyUrl(expanded);
+    console.log(`Scraping link: ${url} -> expanded: ${expanded} -> classified: ${classified}`);
+
+    if (classified === 'google_doc') {
+      return await scrapeGoogleDoc(expanded);
+    } else if (classified === 'pdf' || expanded.includes('export=download')) {
+      const pdf = await fetchPdfText(expanded);
+      return pdf.text || '';
+    } else if (classified === 'html') {
+      const res = await scrapeWithCheerio(expanded);
+      return res.text || '';
+    }
+  } catch (err) {
+    console.error(`Failed to scrape link ${url}:`, err);
+  }
+  return '';
+}
 
 export async function POST(req: Request) {
   try {
@@ -49,18 +124,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Gemini API key is not configured.' }, { status: 500 });
     }
 
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
+    let initialJson: any = null;
     let inputContext = '';
 
     if (method === 'url') {
-      try {
-        const response = await fetch(content);
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        $('script, style, nav, footer, header').remove();
-        inputContext = $('body').text().replace(/\s+/g, ' ').trim();
-      } catch (err) {
-        return NextResponse.json({ error: 'Failed to fetch URL content.' }, { status: 400 });
+      const scraped = await fetchAndScrapeLink(content);
+      if (!scraped) {
+        return NextResponse.json({ error: 'Failed to scrape URL content.' }, { status: 400 });
       }
+      inputContext = scraped;
     } else if (method === 'json' || method === 'text') {
       inputContext = content;
     } else if (method === 'image') {
@@ -81,11 +154,6 @@ export async function POST(req: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
-      // Try to parse using available models in fallback order
-      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
-      let lastError: any = null;
-      let rawText = '';
-
       const imagePart = {
         inlineData: {
           data: buffer.toString('base64'),
@@ -93,13 +161,23 @@ export async function POST(req: Request) {
         }
       };
 
+      const promptText = `
+Analyze this screenshot/image.
+1. Perform high-accuracy OCR to extract EVERY SINGLE piece of text, details, contacts, links, eligibility criteria, batches, courses, branches, and company names.
+2. If there are any short URLs (like tinyurl, bit.ly, t.me) or JD links, extract them exactly.
+3. Map the extracted details to the requested JSON schema. Make sure you extract all eligible branches (e.g., CSE, IT, ECE, BCA, BBA, MBA, IMBA), batches (e.g., 2026 passing out batch), companies, deadlines, CTC, and stipend info without omitting any detail.
+`;
+
+      let lastError: any = null;
+      let rawText = '';
+
       for (const modelName of modelsToTry) {
         try {
           const model = genAI.getGenerativeModel({ 
             model: modelName,
             systemInstruction: SYSTEM_PROMPT
           });
-          const result = await model.generateContent(["Extract the data from this image.", imagePart]);
+          const result = await model.generateContent([promptText, imagePart]);
           const response = await result.response;
           rawText = response.text().trim();
           if (rawText) {
@@ -113,61 +191,143 @@ export async function POST(req: Request) {
         }
       }
 
-      if (lastError) {
-        throw lastError;
-      }
-      
-      // Robust JSON extraction
+      if (lastError) throw lastError;
+
       let jsonString = rawText;
       const firstBrace = rawText.indexOf('{');
       const lastBrace = rawText.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         jsonString = rawText.substring(firstBrace, lastBrace + 1);
       }
-      
-      return NextResponse.json({ opportunity: JSON.parse(jsonString) });
+      initialJson = JSON.parse(jsonString);
     } else {
       return NextResponse.json({ error: 'Invalid method.' }, { status: 400 });
     }
 
-    // Process Text/URL/JSON
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
-    let lastError: any = null;
-    let rawText = '';
+    // For Text / URL / JSON inputs: initial parse
+    if (!initialJson) {
+      let lastError: any = null;
+      let rawText = '';
 
-    for (const modelName of modelsToTry) {
-      try {
-        const model = genAI.getGenerativeModel({ 
-          model: modelName,
-          systemInstruction: SYSTEM_PROMPT
-        });
-        const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
-        const response = await result.response;
-        rawText = response.text().trim();
-        if (rawText) {
-          console.log(`Successfully parsed text using model: ${modelName}`);
-          lastError = null;
-          break;
+      for (const modelName of modelsToTry) {
+        try {
+          const model = genAI.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: SYSTEM_PROMPT
+          });
+          const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
+          const response = await result.response;
+          rawText = response.text().trim();
+          if (rawText) {
+            console.log(`Successfully parsed text using model: ${modelName}`);
+            lastError = null;
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`Model ${modelName} failed for text parse:`, err.message || err);
+          lastError = err;
         }
-      } catch (err: any) {
-        console.warn(`Model ${modelName} failed for text parse:`, err.message || err);
-        lastError = err;
+      }
+
+      if (lastError) throw lastError;
+
+      let jsonString = rawText;
+      const firstBrace = rawText.indexOf('{');
+      const lastBrace = rawText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonString = rawText.substring(firstBrace, lastBrace + 1);
+      }
+      initialJson = JSON.parse(jsonString);
+    }
+
+    // URL Crawling and Refinement Step
+    const extractedUrls: string[] = [];
+    
+    // Check fields in parsed JSON for URLs
+    if (initialJson.basic_information?.jd_link && initialJson.basic_information.jd_link !== 'Not Mentioned') {
+      extractedUrls.push(initialJson.basic_information.jd_link);
+    }
+    if (initialJson.attachments?.jd_link && initialJson.attachments.jd_link !== 'Not Mentioned') {
+      extractedUrls.push(initialJson.attachments.jd_link);
+    }
+    
+    // Scan raw input text for links if not image
+    if (method !== 'image' && inputContext) {
+      extractedUrls.push(...extractUrlsFromText(inputContext));
+    }
+
+    const uniqueUrls = Array.from(new Set(extractedUrls)).filter(url => url.startsWith('http'));
+
+    if (uniqueUrls.length > 0) {
+      console.log('Found URLs to crawl and merge:', uniqueUrls);
+      let accumulatedScrapedText = '';
+
+      for (const url of uniqueUrls) {
+        const scraped = await fetchAndScrapeLink(url);
+        if (scraped) {
+          accumulatedScrapedText += `\n\n--- CONTENT FROM LINK ${url} ---\n${scraped}`;
+        }
+      }
+
+      if (accumulatedScrapedText.trim().length > 0) {
+        console.log('Running Gemini refinement pass with crawled content...');
+        const refinementPrompt = `
+You are refining the parsed recruitment data.
+Below is the initial JSON parsed from the screenshot/notice, followed by the crawled text/document content from the linked job description (JD) or registration URL.
+
+Initial JSON:
+${JSON.stringify(initialJson, null, 2)}
+
+Crawled Link Content:
+${accumulatedScrapedText}
+
+Your task is to merge these two sources:
+1. Correct any placeholder/missing values ("Not Specified", "Not Mentioned", null, or empty lists) in the initial JSON using the rich details in the crawled link content.
+2. Ensure you extract the following details completely:
+   - Eligible courses, branches, and passing batch (e.g. B.Tech All Branches, BCA, 2026 passing out batch).
+   - Salary CTC and stipend details.
+   - Number of hiring rounds and round description.
+   - Work location, work mode, and eligibility requirements.
+   - Deadline dates and times.
+3. Return ONLY a valid JSON object matching the 8-section nested schema perfectly. No explanation, no markdown wrapping.
+`;
+
+        let lastRefineError: any = null;
+        let refinedRawText = '';
+
+        for (const modelName of modelsToTry) {
+          try {
+            const model = genAI.getGenerativeModel({ 
+              model: modelName,
+              systemInstruction: SYSTEM_PROMPT
+            });
+            const result = await model.generateContent([refinementPrompt]);
+            const response = await result.response;
+            refinedRawText = response.text().trim();
+            if (refinedRawText) {
+              console.log(`Successfully refined parse using model: ${modelName}`);
+              lastRefineError = null;
+              break;
+            }
+          } catch (err: any) {
+            console.warn(`Model ${modelName} failed for refinement:`, err.message || err);
+            lastRefineError = err;
+          }
+        }
+
+        if (!lastRefineError && refinedRawText) {
+          let refinedJsonString = refinedRawText;
+          const firstBrace = refinedRawText.indexOf('{');
+          const lastBrace = refinedRawText.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            refinedJsonString = refinedRawText.substring(firstBrace, lastBrace + 1);
+          }
+          initialJson = JSON.parse(refinedJsonString);
+        }
       }
     }
 
-    if (lastError) {
-      throw lastError;
-    }
-    
-    // Robust JSON extraction
-    let jsonString = rawText;
-    const firstBrace = rawText.indexOf('{');
-    const lastBrace = rawText.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      jsonString = rawText.substring(firstBrace, lastBrace + 1);
-    }
-    
-    return NextResponse.json({ opportunity: JSON.parse(jsonString) });
+    return NextResponse.json({ opportunity: initialJson });
 
   } catch (error: any) {
     console.error('Parser Error:', error);
