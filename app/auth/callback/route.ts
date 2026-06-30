@@ -67,8 +67,12 @@ export async function GET(request: Request) {
     }, { onConflict: 'user_id' });
 
     // 3. Redirect based on role
-    const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || '').split(',').map(e => e.trim());
-    if (adminEmails.includes(email)) {
+    const adminEmails = (process.env.ADMIN_EMAIL_WHITELIST || process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+      
+    if (user.email && adminEmails.includes(user.email.toLowerCase())) {
       return NextResponse.redirect(`${requestUrl.origin}/admin/dashboard`);
     }
     return NextResponse.redirect(`${requestUrl.origin}/dashboard`);

@@ -57,10 +57,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: userError.message }, { status: 500 });
       }
 
-      if (userData?.user && fullName) {
+      if (userData?.user) {
+        const finalName = fullName || email.split('@')[0] || 'Student';
         // Create initial profiles
-        await supabase.from('profiles').upsert({ id: userData.user.id, full_name: fullName, email });
-        await supabase.from('student_profiles').upsert({ user_id: userData.user.id, full_name: fullName, email });
+        await supabase.from('profiles').upsert({ id: userData.user.id, full_name: finalName, email });
+        await supabase.from('student_profiles').upsert({ user_id: userData.user.id, full_name: finalName, email });
       }
     }
 
