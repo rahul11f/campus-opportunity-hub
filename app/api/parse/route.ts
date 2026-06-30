@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
-import { ExtractedOpportunity } from '@/types/opportunity';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -58,7 +57,6 @@ export async function POST(req: Request) {
         const html = await response.text();
         const $ = cheerio.load(html);
         $('script, style, nav, footer, header').remove();
-        inputContext = $('body').text().replace(/\\s+/g, ' ').trim();
         inputContext = $('body').text().replace(/\s+/g, ' ').trim();
       } catch (err) {
         return NextResponse.json({ error: 'Failed to fetch URL content.' }, { status: 400 });
@@ -83,12 +81,11 @@ export async function POST(req: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
-      // Use Gemini Vision
-      const model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        systemInstruction: SYSTEM_PROMPT
-      });
-      
+      // Try to parse using available models in fallback order
+      const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-pro'];
+      let lastError: any = null;
+      let rawText = '';
+
       const imagePart = {
         inlineData: {
           data: buffer.toString('base64'),
@@ -96,9 +93,29 @@ export async function POST(req: Request) {
         }
       };
 
-      const result = await model.generateContent(["Extract the data from this image.", imagePart]);
-      const response = await result.response;
-      const rawText = response.text().trim();
+      for (const modelName of modelsToTry) {
+        try {
+          const model = genAI.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: SYSTEM_PROMPT
+          });
+          const result = await model.generateContent(["Extract the data from this image.", imagePart]);
+          const response = await result.response;
+          rawText = response.text().trim();
+          if (rawText) {
+            console.log(`Successfully parsed image using model: ${modelName}`);
+            lastError = null;
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`Model ${modelName} failed for image parse:`, err.message || err);
+          lastError = err;
+        }
+      }
+
+      if (lastError) {
+        throw lastError;
+      }
       
       // Robust JSON extraction
       let jsonString = rawText;
@@ -114,13 +131,33 @@ export async function POST(req: Request) {
     }
 
     // Process Text/URL/JSON
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      systemInstruction: SYSTEM_PROMPT
-    });
-    const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
-    const response = await result.response;
-    const rawText = response.text().trim();
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    let lastError: any = null;
+    let rawText = '';
+
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          systemInstruction: SYSTEM_PROMPT
+        });
+        const result = await model.generateContent([`INPUT DATA: \n${inputContext}`]);
+        const response = await result.response;
+        rawText = response.text().trim();
+        if (rawText) {
+          console.log(`Successfully parsed text using model: ${modelName}`);
+          lastError = null;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`Model ${modelName} failed for text parse:`, err.message || err);
+        lastError = err;
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
     
     // Robust JSON extraction
     let jsonString = rawText;
