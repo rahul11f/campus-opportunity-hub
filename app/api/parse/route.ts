@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       const buffer = Buffer.from(arrayBuffer);
       
       // Try to parse using available models in fallback order
-      const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-pro'];
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
       let lastError: any = null;
       let rawText = '';
 
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     }
 
     // Process Text/URL/JSON
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
     let lastError: any = null;
     let rawText = '';
 
