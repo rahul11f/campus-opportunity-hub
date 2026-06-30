@@ -84,13 +84,13 @@ export default function AIParserDashboard() {
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-transparent blur-3xl -z-10 rounded-full" />
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
             <Bot className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">AI Parser Toolkit</h1>
-            <p className="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
-              <Wand2 className="w-4 h-4 text-purple-400" />
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">AI Parser Toolkit</h1>
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+              <Wand2 className="w-4 h-4 text-purple-600" />
               Extract perfectly typed data from any unstructured source
             </p>
           </div>
@@ -110,14 +110,14 @@ export default function AIParserDashboard() {
                 onClick={() => setMethod(tab.id as ParseMethod)}
                 className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all ${
                   method === tab.id 
-                  ? 'bg-indigo-500/10 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.15)] text-white'
-                  : 'bg-background/40 border-white/5 text-gray-400 hover:bg-white/5 hover:border-white/10'
+                  ? 'bg-indigo-50 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.15)] text-indigo-900'
+                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
                 }`}
               >
                 {method === tab.id && (
-                  <motion.div layoutId="active-tab" className="absolute inset-0 bg-indigo-500/5 rounded-2xl" />
+                  <motion.div layoutId="active-tab" className="absolute inset-0 bg-indigo-100 rounded-2xl" />
                 )}
-                <tab.icon className={`w-6 h-6 mb-2 relative z-10 ${method === tab.id ? 'text-indigo-400' : ''}`} />
+                <tab.icon className={`w-6 h-6 mb-2 relative z-10 ${method === tab.id ? 'text-indigo-600' : ''}`} />
                 <span className="text-sm font-bold relative z-10">{tab.label}</span>
                 <span className="text-[10px] opacity-70 relative z-10">{tab.desc}</span>
               </button>
@@ -125,7 +125,7 @@ export default function AIParserDashboard() {
           </div>
 
           {/* Input Area */}
-          <div className="rounded-3xl border border-white/5 bg-background/50 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-xl">
             <AnimatePresence mode="wait">
               <motion.div
                 key={method}
@@ -137,11 +137,11 @@ export default function AIParserDashboard() {
               >
                 {method === 'url' && (
                   <>
-                    <label className="text-sm font-semibold text-gray-300">Target URL</label>
+                    <label className="text-sm font-semibold text-slate-700">Target URL</label>
                     <input 
                       type="url" 
                       placeholder="https://careers.company.com/job..."
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 outline-none focus:border-indigo-500 focus:bg-indigo-50/50 transition-all"
                       value={url}
                       onChange={e => setUrl(e.target.value)}
                     />
@@ -150,10 +150,10 @@ export default function AIParserDashboard() {
 
                 {method === 'json' && (
                   <>
-                    <label className="text-sm font-semibold text-gray-300">Paste Raw JSON payload</label>
+                    <label className="text-sm font-semibold text-slate-700">Paste Raw JSON payload</label>
                     <textarea 
                       placeholder='{ "company": "Google", "role": "SWE" ... }'
-                      className="w-full h-64 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all font-mono text-sm"
+                      className="w-full h-64 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 outline-none focus:border-indigo-500 focus:bg-indigo-50/50 transition-all font-mono text-sm"
                       value={json}
                       onChange={e => setJson(e.target.value)}
                     />
@@ -162,10 +162,10 @@ export default function AIParserDashboard() {
 
                 {method === 'text' && (
                   <>
-                    <label className="text-sm font-semibold text-gray-300">Paste Unstructured Text</label>
+                    <label className="text-sm font-semibold text-slate-700">Paste Unstructured Text</label>
                     <textarea 
                       placeholder="Hi everyone! Amazon is hiring SDE 1. Eligible branches: CSE, IT..."
-                      className="w-full h-64 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 focus:bg-indigo-500/5 transition-all text-sm"
+                      className="w-full h-64 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 outline-none focus:border-indigo-500 focus:bg-indigo-50/50 transition-all text-sm"
                       value={text}
                       onChange={e => setText(e.target.value)}
                     />
@@ -174,8 +174,8 @@ export default function AIParserDashboard() {
 
                 {method === 'image' && (
                   <>
-                    <label className="text-sm font-semibold text-gray-300">Upload Poster / Screenshot</label>
-                    <div className="w-full h-64 border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center bg-white/[0.02] hover:bg-white/[0.04] transition-colors relative">
+                    <label className="text-sm font-semibold text-slate-700">Upload Poster / Screenshot</label>
+                    <div className="w-full h-64 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors relative">
                       <input 
                         type="file" 
                         accept="image/*"
@@ -184,15 +184,15 @@ export default function AIParserDashboard() {
                       />
                       {imageFile ? (
                         <div className="text-center">
-                          <ImageIcon className="w-10 h-10 text-indigo-400 mx-auto mb-3" />
-                          <p className="text-sm font-bold text-white">{imageFile.name}</p>
-                          <p className="text-xs text-gray-400">{(imageFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                          <ImageIcon className="w-10 h-10 text-indigo-600 mx-auto mb-3" />
+                          <p className="text-sm font-bold text-slate-900">{imageFile.name}</p>
+                          <p className="text-xs text-slate-500">{(imageFile.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                       ) : (
                         <div className="text-center">
-                          <Upload className="w-8 h-8 text-gray-500 mx-auto mb-3" />
-                          <p className="text-sm font-medium text-gray-300">Drag & drop or click to upload</p>
-                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                          <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+                          <p className="text-sm font-medium text-slate-600">Drag & drop or click to upload</p>
+                          <p className="text-xs text-slate-400 mt-1">PNG, JPG, JPEG up to 5MB</p>
                         </div>
                       )}
                     </div>
@@ -201,7 +201,7 @@ export default function AIParserDashboard() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-8 pt-6 border-t border-white/5 flex justify-end">
+            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
               <button
                 onClick={handleParse}
                 disabled={loading}
@@ -216,19 +216,19 @@ export default function AIParserDashboard() {
 
         {/* Right Col: Output Preview */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="sticky top-8 space-y-4">
-          <div className="rounded-3xl border border-white/5 bg-background/50 backdrop-blur-xl p-6 shadow-2xl min-h-[400px] flex flex-col">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <FileJson className="w-5 h-5 text-gray-400" />
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl min-h-[400px] flex flex-col">
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <FileJson className="w-5 h-5 text-slate-400" />
               Extracted Payload
             </h2>
             
-            <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-4 overflow-y-auto max-h-[500px]">
+            <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[500px]">
               {result ? (
-                <pre className="text-xs font-mono text-emerald-400/90 whitespace-pre-wrap">
+                <pre className="text-xs font-mono text-emerald-700 whitespace-pre-wrap">
                   {JSON.stringify(result, null, 2)}
                 </pre>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                <div className="h-full flex flex-col items-center justify-center text-slate-400">
                   <Bot className="w-12 h-12 mb-3 opacity-20" />
                   <p className="text-sm">Awaiting input...</p>
                 </div>
@@ -238,7 +238,7 @@ export default function AIParserDashboard() {
             {result && (
               <button
                 onClick={handleSendToForm}
-                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-colors"
+                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors"
               >
                 Review & Publish <ArrowUpRight className="w-4 h-4" />
               </button>
