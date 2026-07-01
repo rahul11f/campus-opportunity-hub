@@ -18,7 +18,7 @@ type Props = {
   existingId?: string;
   contributionId?: string;
   additionalInfo?: AdditionalInfoItem[];
-  onSuccess?: () => void;
+  onSuccess?: (isPublished: boolean, data: any) => void;
 };
 
 const TYPES: OpportunityType[] = [
@@ -288,7 +288,7 @@ export function OpportunityForm({
           : 'Draft saved successfully'
       );
 
-      onSuccess?.();
+      onSuccess?.(isPublished, data);
 
       if (!onSuccess) {
         if (isPublished) {
