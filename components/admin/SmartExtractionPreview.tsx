@@ -514,19 +514,19 @@ export function SmartExtractionPreview({
 
   const mockOpportunity = {
     id: 'preview',
-    company: currentOppData?.basic_information?.company_name || 'Company Name',
-    role: currentOppData?.job_details?.job_role || 'Job Role',
-    type: currentOppData?.basic_information?.opportunity_type || 'placement',
-    salary: currentOppData?.job_details?.salary_ctc || currentOppData?.salary || null,
-    location: currentOppData?.job_details?.location || currentOppData?.location || null,
-    deadline: currentOppData?.basic_information?.application_deadline || currentOppData?.deadline || null,
+    company: (currentOppData as any)?.basic_information?.company_name || 'Company Name',
+    role: (currentOppData as any)?.job_details?.job_role || 'Job Role',
+    type: (currentOppData as any)?.basic_information?.opportunity_type || 'placement',
+    salary: (currentOppData as any)?.job_details?.salary_ctc || (currentOppData as any)?.salary || null,
+    location: (currentOppData as any)?.job_details?.location || (currentOppData as any)?.location || null,
+    deadline: (currentOppData as any)?.basic_information?.application_deadline || (currentOppData as any)?.deadline || null,
     eligibility: {
-      cgpa: currentOppData?.eligibility?.minimum_cgpa_percentage || null,
-      branches: currentOppData?.eligibility?.eligible_branches ? [currentOppData.eligibility.eligible_branches] : [],
-      batch: currentOppData?.eligibility?.passing_batch || null,
-      backlog: currentOppData?.eligibility?.active_backlogs_allowed || null,
+      cgpa: (currentOppData as any)?.eligibility?.minimum_cgpa_percentage || null,
+      branches: (currentOppData as any)?.eligibility?.eligible_branches ? [(currentOppData as any).eligibility.eligible_branches] : [],
+      batch: (currentOppData as any)?.eligibility?.passing_batch || null,
+      backlog: (currentOppData as any)?.eligibility?.active_backlogs_allowed || null,
     },
-    company_logo: currentOppData?.basic_information?.company_logo || null,
+    company_logo: (currentOppData as any)?.basic_information?.company_logo || null,
   };
 
   return (
@@ -614,19 +614,19 @@ export function SmartExtractionPreview({
               opportunities.map((opp, idx) => {
                 const mockOpp = {
                   id: `preview-${idx}`,
-                  company: opp.basic_information?.company_name || `Company ${idx + 1}`,
-                  role: opp.job_details?.job_role || 'Job Role',
-                  type: opp.basic_information?.opportunity_type || 'placement',
-                  salary: opp.job_details?.salary_ctc || opp.salary || null,
-                  location: opp.job_details?.location || opp.location || null,
-                  deadline: opp.basic_information?.application_deadline || opp.deadline || null,
+                  company: (opp as any).basic_information?.company_name || `Company ${idx + 1}`,
+                  role: (opp as any).job_details?.job_role || 'Job Role',
+                  type: (opp as any).basic_information?.opportunity_type || 'placement',
+                  salary: (opp as any).job_details?.salary_ctc || (opp as any).salary || null,
+                  location: (opp as any).job_details?.location || (opp as any).location || null,
+                  deadline: (opp as any).basic_information?.application_deadline || (opp as any).deadline || null,
                   eligibility: {
-                    cgpa: opp.eligibility?.minimum_cgpa_percentage || null,
-                    branches: opp.eligibility?.eligible_branches ? [opp.eligibility.eligible_branches] : [],
-                    batch: opp.eligibility?.passing_batch || null,
-                    backlog: opp.eligibility?.active_backlogs_allowed || null,
+                    cgpa: (opp as any).eligibility?.minimum_cgpa_percentage || null,
+                    branches: (opp as any).eligibility?.eligible_branches ? [(opp as any).eligibility.eligible_branches] : [],
+                    batch: (opp as any).eligibility?.passing_batch || null,
+                    backlog: (opp as any).eligibility?.active_backlogs_allowed || null,
                   },
-                  company_logo: opp.basic_information?.company_logo || null,
+                  company_logo: (opp as any).basic_information?.company_logo || null,
                 };
                 return (
                   <div key={idx} className="border border-slate-200 dark:border-border rounded-3xl p-6 bg-slate-50 dark:bg-muted/10">

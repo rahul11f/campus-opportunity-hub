@@ -71,7 +71,10 @@ export function OpportunityForm({
   // Robust helper to support old flat data and new 8-section Gemini structures
   const companyVal = initialData?.company || (initialData as any)?.basic_information?.company_name || '';
   const roleVal = initialData?.role || (initialData as any)?.job_details?.job_role || '';
-  const typeVal = initialData?.type || (initialData as any)?.basic_information?.opportunity_type || 'placement';
+  const rawType = initialData?.type || (initialData as any)?.basic_information?.opportunity_type || 'placement';
+  const typeVal = TYPES.includes(String(rawType).toLowerCase() as any)
+    ? (String(rawType).toLowerCase() as OpportunityType)
+    : 'placement';
   const salaryVal = initialData?.salary || (initialData as any)?.job_details?.salary_ctc || '';
   const locationVal = initialData?.location || (initialData as any)?.job_details?.location || '';
   const applyLinkVal = initialData?.apply_link || (initialData as any)?.basic_information?.jd_link || (initialData as any)?.attachments?.jd_link || '';
@@ -95,12 +98,29 @@ export function OpportunityForm({
     }
   }
 
+  const safeParseArray = (val: any): string[] => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      return val
+        .split(/[,\n]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
   const initialEligibility = initialData?.eligibility || {};
-  const initialBranches = (initialEligibility as any).branches || ((initialEligibility as any).eligible_branches ? [(initialEligibility as any).eligible_branches] : []);
+  const rawBranches = (initialEligibility as any).branches || (initialEligibility as any).eligible_branches;
+  const initialBranches = safeParseArray(rawBranches);
   const initialCgpa = (initialEligibility as any).cgpa || (initialEligibility as any).minimum_cgpa_percentage || '';
   const initialBacklog = (initialEligibility as any).backlog || (initialEligibility as any).active_backlogs_allowed || '';
   const initialBatch = (initialEligibility as any).batch || (initialEligibility as any).passing_batch || '';
   const initialOther = (initialEligibility as any).other || (initialEligibility as any).cutoff_criteria || '';
+
+  const initialSkills = safeParseArray(initialData?.skills);
+  const initialResponsibilities = safeParseArray(initialData?.responsibilities || (initialEligibility as any).responsibilities_list);
+  const initialTags = safeParseArray(initialData?.tags);
+  const initialDescription = safeParseArray(initialData?.interview_process?.description || (initialData as any)?.recruitment_process?.hiring_process);
 
   const [form, setForm] = useState({
     company: companyVal,
@@ -114,9 +134,9 @@ export function OpportunityForm({
     deadline: deadlineVal,
     featured: false,
     is_published: false,
-    skills: initialData?.skills || [],
-    responsibilities: initialData?.responsibilities || [],
-    tags: initialData?.tags || [],
+    skills: initialSkills,
+    responsibilities: initialResponsibilities,
+    tags: initialTags,
     eligibility: {
       branches: initialBranches,
       cgpa: initialCgpa,
@@ -160,7 +180,7 @@ export function OpportunityForm({
     },
     interview_process: {
       rounds: initialData?.interview_process?.rounds || null,
-      description: initialData?.interview_process?.description || [],
+      description: initialDescription,
     },
     raw_text: rawText || (initialData ? JSON.stringify(initialData, null, 2) : ''),
   });
@@ -219,7 +239,9 @@ export function OpportunityForm({
           form.apply_link || null,
         source_link:
           form.source_link || null,
-        contribution_id: contributionId || undefined,
+        contribution_id: (contributionId && contributionId !== 'undefined' && contributionId !== 'null')
+          ? contributionId
+          : null,
       };
 
       const res = await fetch(
