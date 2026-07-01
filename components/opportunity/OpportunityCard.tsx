@@ -63,30 +63,38 @@ function CountdownTimer({ deadline }: { deadline: string | null }) {
   );
 }
 
-export function OpportunityCard({
-  opportunity,
-}: {
-  opportunity: any;
-}) {
+export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: any; onViewDetails?: () => void }) {
+  const isExpired = opportunity.deadline
+    ? Math.ceil((new Date(opportunity.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) < 0
+    : false;
+
   return (
-    <div className="group flex flex-col bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <div className={`group relative rounded-3xl border border-slate-200 dark:border-border bg-white dark:bg-card overflow-hidden hover:shadow-xl hover:border-primary/20 dark:hover:border-primary/20 transition-all flex flex-col h-full ${isExpired ? 'opacity-75' : ''}`}>
       
-      {/* Header section */}
-      <div className="p-6 pb-4 flex gap-4">
-        <div className="w-12 h-12 rounded-lg border border-slate-100 dark:border-border bg-slate-50 dark:bg-background flex items-center justify-center shrink-0 p-1">
+      {/* Badge / Logo header */}
+      <div className="p-6 pb-4 flex items-start justify-between gap-4">
+        <div className="w-12 h-12 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
           {opportunity.company_logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={opportunity.company_logo}
               alt={opportunity.company}
-              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
+              className="w-8 h-8 object-contain"
             />
           ) : (
             <Building2 className="w-6 h-6 text-slate-400" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          {String(opportunity.id).startsWith('preview') ? (
+          {onViewDetails ? (
+            <button
+              type="button"
+              onClick={onViewDetails}
+              className="text-left text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors block w-full"
+            >
+              {opportunity.role}
+            </button>
+          ) : String(opportunity.id).startsWith('preview') ? (
             <span className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1">
               {opportunity.role}
             </span>
@@ -128,7 +136,16 @@ export function OpportunityCard({
       <div className="px-6 py-4 bg-slate-50 dark:bg-muted/50 border-t border-slate-100 dark:border-border flex items-center justify-between text-sm">
         <CountdownTimer deadline={opportunity.deadline} />
         
-        {String(opportunity.id).startsWith('preview') ? (
+        {onViewDetails ? (
+          <button
+            type="button"
+            onClick={onViewDetails}
+            className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            View Details
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        ) : String(opportunity.id).startsWith('preview') ? (
           <span className="flex items-center gap-1.5 font-semibold text-slate-400 cursor-not-allowed">
             View Details
             <ArrowRight className="w-4 h-4" />

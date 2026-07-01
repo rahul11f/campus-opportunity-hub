@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   ChevronDown,
   ChevronUp,
@@ -22,9 +23,15 @@ import {
   HelpCircle,
   ExternalLink,
   BarChart3,
-  PlusCircle, // Added for adding custom slots
+  PlusCircle,
+  X,
+  Edit2,
+  Check,
+  IndianRupee,
+  Building2,
 } from 'lucide-react';
 import { OpportunityCard } from '@/components/opportunity/OpportunityCard';
+import { OpportunityDetailTabs } from '@/components/opportunity/OpportunityDetailTabs';
 
 /* ─── Types ────────────────────────────────────────── */
 
@@ -446,6 +453,90 @@ function AdditionalInfoSection({
   );
 }
 
+function getOpportunityFields(opp: any) {
+  return {
+    company: opp.company || opp.basic_information?.company_name || '',
+    role: opp.role || opp.job_details?.job_role || '',
+    type: opp.type || opp.basic_information?.opportunity_type || 'placement',
+    salary: opp.salary || opp.job_details?.salary_ctc || '',
+    location: opp.location || opp.job_details?.location || '',
+    apply_link: opp.apply_link || opp.basic_information?.jd_link || opp.attachments?.jd_link || '',
+    source_link: opp.source_link || '',
+    instructions: opp.instructions || opp.communication?.additional_instructions || '',
+    deadline: opp.deadline || opp.basic_information?.application_deadline || '',
+    cgpa: opp.eligibility?.cgpa || opp.eligibility?.minimum_cgpa_percentage || '',
+    backlog: opp.eligibility?.backlog || opp.eligibility?.active_backlogs_allowed || '',
+    batch: opp.eligibility?.batch || opp.eligibility?.passing_batch || '',
+    branches: Array.isArray(opp.eligibility?.branches) 
+      ? opp.eligibility.branches.join(', ')
+      : opp.eligibility?.branches || opp.eligibility?.eligible_branches || '',
+  };
+}
+
+function updateOpportunityFields(opp: any, fields: any) {
+  const branchesArray = fields.branches
+    ? fields.branches.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  const isNested = !!(opp.basic_information || opp.job_details || opp.eligibility);
+
+  if (isNested) {
+    return {
+      ...opp,
+      basic_information: {
+        ...opp.basic_information,
+        company_name: fields.company,
+        opportunity_type: fields.type,
+        application_deadline: fields.deadline,
+        jd_link: fields.apply_link,
+      },
+      job_details: {
+        ...opp.job_details,
+        job_role: fields.role,
+        salary_ctc: fields.salary,
+        location: fields.location,
+      },
+      eligibility: {
+        ...opp.eligibility,
+        minimum_cgpa_percentage: fields.cgpa,
+        active_backlogs_allowed: fields.backlog,
+        passing_batch: fields.batch,
+        eligible_branches: fields.branches,
+        branches: branchesArray,
+      },
+      instructions: fields.instructions,
+      apply_link: fields.apply_link,
+      source_link: fields.source_link,
+      deadline: fields.deadline,
+      company: fields.company,
+      role: fields.role,
+      type: fields.type,
+      salary: fields.salary,
+      location: fields.location,
+    };
+  } else {
+    return {
+      ...opp,
+      company: fields.company,
+      role: fields.role,
+      type: fields.type,
+      salary: fields.salary,
+      location: fields.location,
+      apply_link: fields.apply_link,
+      source_link: fields.source_link,
+      instructions: fields.instructions,
+      deadline: fields.deadline,
+      eligibility: {
+        ...opp.eligibility,
+        cgpa: fields.cgpa,
+        backlog: fields.backlog,
+        batch: fields.batch,
+        branches: branchesArray,
+      }
+    };
+  }
+}
+
 /* ─── Main component ───────────────────────────────── */
 
 export function SmartExtractionPreview({
@@ -456,10 +547,42 @@ export function SmartExtractionPreview({
   onDataChange,
 }: Props) {
   const [viewMode, setViewMode] = useState<'smart' | 'json' | 'card'>('smart');
+  const [detailsModalOppIdx, setDetailsModalOppIdx] = useState<number | null>(null);
+  const [isEditingModalDetails, setIsEditingModalDetails] = useState(false);
+  const [modalFormFields, setModalFormFields] = useState<any>(null);
 
   // Handle multi-opportunities layout
   const opportunities = data.opportunities || [];
   const hasMultiple = opportunities.length > 0;
+
+  function handleOpenDetailsModal(idx: number | null) {
+    const opp = idx !== null ? opportunities[idx] : data;
+    setDetailsModalOppIdx(idx === null ? -99 : idx);
+    setModalFormFields(getOpportunityFields(opp));
+    setIsEditingModalDetails(false);
+  }
+
+  function handleSaveModalDetails() {
+    if (!onDataChange || modalFormFields === null) return;
+    
+    const targetIdx = detailsModalOppIdx === -99 ? null : detailsModalOppIdx;
+    
+    if (targetIdx !== null) {
+      const updatedOpp = updateOpportunityFields(opportunities[targetIdx], modalFormFields);
+      const nextOpportunities = [...opportunities];
+      nextOpportunities[targetIdx] = updatedOpp;
+      onDataChange({
+        ...data,
+        opportunities: nextOpportunities
+      });
+    } else {
+      const updatedData = updateOpportunityFields(data, modalFormFields);
+      onDataChange(updatedData);
+    }
+    
+    setIsEditingModalDetails(false);
+    toast.success('Changes saved successfully!');
+  }
   
   // Use currently selected opportunity if array is present
   const currentOppData = hasMultiple ? opportunities[selectedOpportunityIndex] : data;
@@ -528,6 +651,29 @@ export function SmartExtractionPreview({
     },
     company_logo: (currentOppData as any)?.basic_information?.company_logo || null,
   };
+
+  const activeModalOpp = detailsModalOppIdx === null ? null : detailsModalOppIdx === -99 ? data : opportunities[detailsModalOppIdx];
+
+  const modalMockOpp = activeModalOpp ? {
+    id: 'modal-preview',
+    company: activeModalOpp.company || (activeModalOpp as any).basic_information?.company_name || 'Company Name',
+    role: activeModalOpp.role || (activeModalOpp as any).job_details?.job_role || 'Job Role',
+    type: activeModalOpp.type || (activeModalOpp as any).basic_information?.opportunity_type || 'placement',
+    salary: activeModalOpp.salary || (activeModalOpp as any).job_details?.salary_ctc || null,
+    location: activeModalOpp.location || (activeModalOpp as any).job_details?.location || null,
+    deadline: activeModalOpp.deadline || (activeModalOpp as any).basic_information?.application_deadline || null,
+    eligibility: {
+      cgpa: (activeModalOpp as any).eligibility?.minimum_cgpa_percentage || (activeModalOpp as any).eligibility?.cgpa || null,
+      branches: (activeModalOpp as any).eligibility?.eligible_branches 
+        ? [(activeModalOpp as any).eligibility.eligible_branches] 
+        : Array.isArray((activeModalOpp as any).eligibility?.branches)
+        ? (activeModalOpp as any).eligibility.branches
+        : [],
+      batch: (activeModalOpp as any).eligibility?.passing_batch || (activeModalOpp as any).eligibility?.batch || null,
+      backlog: (activeModalOpp as any).eligibility?.active_backlogs_allowed || (activeModalOpp as any).eligibility?.backlog || null,
+    },
+    company_logo: (activeModalOpp as any).basic_information?.company_logo || null,
+  } : null;
 
   return (
     <div className="space-y-4">
@@ -633,7 +779,7 @@ export function SmartExtractionPreview({
                     <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
                       Opportunity Card {idx + 1} Preview ({mockOpp.company})
                     </h3>
-                    <OpportunityCard opportunity={mockOpp} />
+                    <OpportunityCard opportunity={mockOpp} onViewDetails={() => handleOpenDetailsModal(idx)} />
                   </div>
                 );
               })
@@ -642,7 +788,7 @@ export function SmartExtractionPreview({
                 <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
                   Opportunity Card Preview
                 </h3>
-                <OpportunityCard opportunity={mockOpportunity} />
+                <OpportunityCard opportunity={mockOpportunity} onViewDetails={() => handleOpenDetailsModal(null)} />
               </div>
             )}
           </div>
@@ -666,6 +812,228 @@ export function SmartExtractionPreview({
         <div className="text-center py-10 text-muted-foreground rounded-xl border border-dashed border-border">
           <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm">No data extracted yet. Process a notice to see results.</p>
+        </div>
+      )}
+
+      {/* Review Details Modal with inline editing capabilities */}
+      {detailsModalOppIdx !== null && activeModalOpp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative border border-slate-100 dark:border-border text-foreground">
+            <button 
+              onClick={() => setDetailsModalOppIdx(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-bold p-2 bg-slate-50 dark:bg-muted rounded-full transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="p-6 md:p-8">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4 pr-12">
+                <h2 className="text-xl font-bold text-slate-950 dark:text-foreground">
+                  {isEditingModalDetails ? 'Edit Opportunity Fields' : 'Review Opportunity Details'}
+                </h2>
+                
+                {onDataChange && (
+                  <button
+                    onClick={() => {
+                      if (isEditingModalDetails) {
+                        handleSaveModalDetails();
+                      } else {
+                        setIsEditingModalDetails(true);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                      isEditingModalDetails 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                        : 'bg-slate-100 dark:bg-muted text-slate-800 dark:text-foreground hover:bg-slate-200 dark:hover:bg-muted/80'
+                    }`}
+                  >
+                    {isEditingModalDetails ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Save Changes
+                      </>
+                    ) : (
+                      <>
+                        <Edit2 className="w-3.5 h-3.5" /> Edit Details
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {isEditingModalDetails && modalFormFields ? (
+                <div className="space-y-4 max-w-2xl text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Company Name</label>
+                      <input 
+                        value={modalFormFields.company} 
+                        onChange={e => setModalFormFields({...modalFormFields, company: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Job Role</label>
+                      <input 
+                        value={modalFormFields.role} 
+                        onChange={e => setModalFormFields({...modalFormFields, role: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Opportunity Type</label>
+                      <select 
+                        value={modalFormFields.type} 
+                        onChange={e => setModalFormFields({...modalFormFields, type: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
+                      >
+                        <option value="placement">Placement</option>
+                        <option value="internship">Internship</option>
+                        <option value="hackathon">Hackathon</option>
+                        <option value="scholarship">Scholarship</option>
+                        <option value="campus_drive">Campus Drive</option>
+                        <option value="fellowship">Fellowship</option>
+                        <option value="competition">Competition</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Salary / CTC</label>
+                      <input 
+                        value={modalFormFields.salary} 
+                        onChange={e => setModalFormFields({...modalFormFields, salary: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Location</label>
+                      <input 
+                        value={modalFormFields.location} 
+                        onChange={e => setModalFormFields({...modalFormFields, location: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Application Deadline</label>
+                      <input 
+                        type="datetime-local"
+                        value={modalFormFields.deadline ? modalFormFields.deadline.substring(0,16) : ''} 
+                        onChange={e => setModalFormFields({...modalFormFields, deadline: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Minimum CGPA</label>
+                      <input 
+                        value={modalFormFields.cgpa} 
+                        onChange={e => setModalFormFields({...modalFormFields, cgpa: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Backlogs Allowed</label>
+                      <input 
+                        value={modalFormFields.backlog} 
+                        onChange={e => setModalFormFields({...modalFormFields, backlog: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Eligible Batch</label>
+                      <input 
+                        value={modalFormFields.batch} 
+                        onChange={e => setModalFormFields({...modalFormFields, batch: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Apply Link</label>
+                      <input 
+                        value={modalFormFields.apply_link} 
+                        onChange={e => setModalFormFields({...modalFormFields, apply_link: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-muted-foreground block mb-1">Eligible Branches (Comma separated)</label>
+                      <input 
+                        value={modalFormFields.branches} 
+                        onChange={e => setModalFormFields({...modalFormFields, branches: e.target.value})}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs text-muted-foreground block mb-1">Notice Instructions</label>
+                      <textarea 
+                        value={modalFormFields.instructions} 
+                        onChange={e => setModalFormFields({...modalFormFields, instructions: e.target.value})}
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingModalDetails(false)}
+                      className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveModalDetails}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6 text-left">
+                  {modalMockOpp && (
+                    <div className="grid lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2 space-y-6">
+                        {/* Header Details Preview */}
+                        <div className="rounded-2xl border bg-slate-50 dark:bg-card p-6 md:p-8">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 rounded-2xl border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                              <Building2 className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h1 className="text-2xl font-bold">{modalMockOpp.role}</h1>
+                              <p className="text-muted-foreground font-medium">{modalMockOpp.company}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs font-medium">
+                            <span className="px-3 py-1 rounded-full border bg-white dark:bg-muted text-foreground">{modalMockOpp.type}</span>
+                            {modalMockOpp.location && <span className="px-3 py-1 rounded-full border bg-white dark:bg-muted text-foreground">{modalMockOpp.location}</span>}
+                            {modalMockOpp.salary && <span className="px-3 py-1 rounded-full border bg-white dark:bg-muted text-foreground">{modalMockOpp.salary}</span>}
+                            {modalMockOpp.deadline && <span className="px-3 py-1 rounded-full border bg-white dark:bg-muted text-foreground">Deadline: {new Date(modalMockOpp.deadline).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+
+                        {/* Opportunity detail tabs */}
+                        <OpportunityDetailTabs data={activeModalOpp} />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border bg-slate-50 dark:bg-card p-6">
+                          <h3 className="font-semibold mb-4 text-sm">Quick Info</h3>
+                          <div className="space-y-3 text-xs">
+                            <div className="flex justify-between"><span className="text-muted-foreground">Company</span><span className="font-semibold">{modalMockOpp.company}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Role</span><span className="font-semibold">{modalMockOpp.role}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-semibold">{modalMockOpp.type}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Location</span><span className="font-semibold">{modalMockOpp.location || 'TBD'}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Salary</span><span className="font-semibold">{modalMockOpp.salary || 'TBD'}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
