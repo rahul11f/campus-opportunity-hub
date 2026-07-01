@@ -20,8 +20,31 @@ export const EligibilitySchema = z.object({
 }).catchall(z.any());
 
 export const InterviewProcessSchema = z.object({
-  rounds: z.number().nullable(),
+  rounds: z
+    .union([z.number(), z.string(), z.null()])
+    .optional()
+    .transform((val) => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') return val;
+      const parsed = parseInt(val, 10);
+      return isNaN(parsed) ? null : parsed;
+    }),
   description: z.array(z.string()).nullable(),
+});
+
+export const AdditionalInfoItemSchema = z.object({
+  label: z.string(),
+  category: z.enum([
+    'instructions',
+    'contact',
+    'logistics',
+    'documents',
+    'dates',
+    'compensation',
+    'eligibility',
+    'other',
+  ]),
+  value: z.string(),
 });
 
 export const ExtractedOpportunitySchema = z.object({
@@ -81,8 +104,16 @@ export const ExtractedOpportunitySchema = z.object({
     reminder_notice: z.string().nullable().optional(),
     notice_type: z.string().nullable().optional(),
   }).nullable().optional(),
+  additional_extracted_info: z.array(AdditionalInfoItemSchema).optional().default([]),
   confidence_score: z.number().min(0).max(1).optional().default(1),
 });
+
+export const RootExtractedOpportunitySchema = z.union([
+  ExtractedOpportunitySchema,
+  z.object({
+    opportunities: z.array(ExtractedOpportunitySchema),
+  }),
+]);
 
 export const OpportunityCreateSchema = z.object({
   company: z.string().min(1, 'Company name is required').max(200),

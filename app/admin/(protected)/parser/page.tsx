@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Bot, Link as LinkIcon, FileJson, Image as ImageIcon, FileText, Loader2, Wand2, Upload, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { SmartExtractionPreview } from '@/components/admin/SmartExtractionPreview';
 
 type ParseMethod = 'url' | 'json' | 'image' | 'text';
 
@@ -21,6 +22,8 @@ export default function AIParserDashboard() {
   
   // Preview Result
   const [result, setResult] = useState<any | null>(null);
+  const [extractionStats, setExtractionStats] = useState<any | null>(null);
+  const [selectedOpportunityIndex, setSelectedOpportunityIndex] = useState(0);
 
   const tabs = [
     { id: 'url', label: 'URL Fetch', icon: LinkIcon, desc: 'Scrape job portals' },
@@ -33,6 +36,7 @@ export default function AIParserDashboard() {
     try {
       setLoading(true);
       setResult(null);
+      setSelectedOpportunityIndex(0);
 
       let payload = new FormData();
       payload.append('method', method);
@@ -64,6 +68,7 @@ export default function AIParserDashboard() {
 
       const data = await res.json();
       setResult(data.opportunity);
+      setExtractionStats(data.extraction_stats || null);
       toast.success('Successfully extracted structured data!');
     } catch (err: any) {
       toast.error(err.message || 'Parsing failed');
@@ -74,7 +79,13 @@ export default function AIParserDashboard() {
 
   function handleSendToForm() {
     if (!result) return;
-    localStorage.setItem('draft_opportunity', JSON.stringify(result));
+    const opportunities = result.opportunities || [];
+    const activeOpp = opportunities.length > 0 ? opportunities[selectedOpportunityIndex] : result;
+    const oppsToSave = opportunities.length > 0 ? opportunities : [result];
+    
+    localStorage.setItem('draft_opportunity', JSON.stringify(activeOpp));
+    localStorage.setItem('draft_opportunities', JSON.stringify(oppsToSave));
+    localStorage.setItem('draft_opportunity_index', String(selectedOpportunityIndex));
     router.push('/admin/new?draft=true');
   }
 
@@ -217,31 +228,36 @@ export default function AIParserDashboard() {
         {/* Right Col: Output Preview */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="sticky top-8 space-y-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl min-h-[400px] flex flex-col">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <FileJson className="w-5 h-5 text-slate-400" />
-              Extracted Payload
-            </h2>
-            
-            <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[500px]">
-              {result ? (
-                <pre className="text-xs font-mono text-emerald-700 whitespace-pre-wrap">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                  <Bot className="w-12 h-12 mb-3 opacity-20" />
-                  <p className="text-sm">Awaiting input...</p>
-                </div>
-              )}
-            </div>
+            {result ? (
+              <>
+                <SmartExtractionPreview
+                  data={result}
+                  stats={extractionStats}
+                  selectedOpportunityIndex={selectedOpportunityIndex}
+                  onSelectOpportunity={setSelectedOpportunityIndex}
+                  onDataChange={setResult}
+                />
 
-            {result && (
-              <button
-                onClick={handleSendToForm}
-                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors"
-              >
-                Review & Publish <ArrowUpRight className="w-4 h-4" />
-              </button>
+                <button
+                  onClick={handleSendToForm}
+                  className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors"
+                >
+                  Review & Publish <ArrowUpRight className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <FileJson className="w-5 h-5 text-slate-400" />
+                  Extracted Payload
+                </h2>
+                <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[500px]">
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                    <Bot className="w-12 h-12 mb-3 opacity-20" />
+                    <p className="text-sm">Awaiting input...</p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </motion.div>

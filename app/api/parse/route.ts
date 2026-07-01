@@ -1,72 +1,104 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
+import { cleanExtraction } from '@/lib/pipeline/extractionCleaner';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const SYSTEM_PROMPT = `
 You are an expert AI recruitment data parser.
 Your task is to extract information from the given text/json/image data and map it EXACTLY to the following JSON structure.
-Do not hallucinate. If a value is missing, return "Not Mentioned" or null where appropriate.
+If there are multiple companies or multiple distinct roles hiring (e.g. Logiciel AI Ventures, Indifi Technologies, CallerDesk.io hiring separately), you MUST extract them as separate, independent items in the "opportunities" array. If there is only one company/role, you still wrap it in the "opportunities" array.
+
+STRICT RULES:
+- OCR may be noisy, duplicated, malformed, or partially corrupted.
+- NEVER hallucinate missing facts.
+- Infer only from visible evidence.
+- Extract EVERY piece of text, number, date, URL, phone number, email, instruction, note, and detail from the source.
+- TABLES: If the data contains tabular structures, you MUST preserve all information from the tables. Map table rows properly to the respective slots or additional_extracted_info. Do not skip any rows or columns.
+- If information is genuinely missing, return null for that field. 
+- However, if a slot explicitly states a negative status or "NA" in the source (e.g. 'Cut-off: NA', 'Bond to be Signed: NA', 'Gender Preference: NA'), keep it EXACTLY as "NA" or the respective negative value. Do not convert explicit "NA" indicators into null.
+
+For each opportunity in the "opportunities" array, you must perform TWO phases of extraction:
+
+## PHASE 1: Standard Slots
+Fill the standard sections (basic_information, eligibility, job_details, recruitment_process, schedule, communication, attachments, source_metadata). Use null for any field not present in the source.
+
+## PHASE 2: Additional Extracted Info
+After filling standard slots, scan the ENTIRE source again. For EVERY remaining piece of text not captured in Phase 1 — instructions, contact details, logistics, document requirements, additional dates, notes, bullet points — create entries in "additional_extracted_info".
+
+Each entry must have:
+- "label": Human-readable title
+- "category": One of "instructions", "contact", "logistics", "documents", "dates", "compensation", "eligibility", "other"
+- "value": The exact extracted text
+
+IMPORTANT: EVERY sentence, detail, and data point in the source MUST appear either in a standard slot OR in additional_extracted_info. Nothing should be lost.
 
 Required JSON Schema:
 {
-  "basic_information": {
-    "company_name": "string | Not Mentioned",
-    "company_logo": "string | Not Mentioned",
-    "opportunity_type": "string | Not Mentioned",
-    "round_name": "string | Not Mentioned",
-    "verified_status": "string | Not Mentioned",
-    "application_deadline": "string | Not Mentioned",
-    "jd_link": "string | Not Mentioned"
-  },
-  "eligibility": {
-    "educational_qualification": "string | Not Mentioned",
-    "eligible_branches": "string | Not Mentioned",
-    "eligible_streams": "string | Not Mentioned",
-    "passing_batch": "string | Not Mentioned",
-    "minimum_cgpa_percentage": "string | Not Mentioned",
-    "cutoff_criteria": "string | Not Mentioned",
-    "active_backlogs_allowed": "string | Not Mentioned",
-    "gender_eligibility": "string | Not Mentioned"
-  },
-  "job_details": {
-    "job_role": "string | Not Mentioned",
-    "salary_ctc": "string | Not Mentioned",
-    "stipend": "string | Not Mentioned",
-    "location": "string | Not Mentioned",
-    "work_mode": "string | Not Mentioned",
-    "employment_type": "string | Not Mentioned"
-  },
-  "recruitment_process": {
-    "hiring_process": "string | Not Mentioned",
-    "number_of_rounds": "string | Not Mentioned",
-    "elimination_rounds": "string | Not Mentioned"
-  },
-  "schedule": {
-    "event_date": "string | Not Mentioned",
-    "time": "string | Not Mentioned",
-    "venue": "string | Not Mentioned",
-    "mode": "string | Not Mentioned"
-  },
-  "communication": {
-    "communication_channel": "string | Not Mentioned",
-    "check_inbox": "string | Not Mentioned",
-    "check_spam_folder": "string | Not Mentioned",
-    "timing_shared_by": "string | Not Mentioned",
-    "additional_instructions": "string | Not Mentioned"
-  },
-  "attachments": {
-    "jd_link": "string | Not Mentioned",
-    "student_eligible_list": "string | Not Mentioned",
-    "additional_documents": "string | Not Mentioned"
-  },
-  "source_metadata": {
-    "issued_by": "string | Not Mentioned",
-    "institution": "string | Not Mentioned",
-    "reminder_notice": "string | Not Mentioned",
-    "notice_type": "string | Not Mentioned"
-  }
+  "opportunities": [
+    {
+      "basic_information": {
+        "company_name": "string | null",
+        "company_logo": "string | null",
+        "opportunity_type": "string | null",
+        "round_name": "string | null",
+        "verified_status": "string | null",
+        "application_deadline": "string | null",
+        "jd_link": "string | null"
+      },
+      "eligibility": {
+        "educational_qualification": "string | null",
+        "eligible_branches": "string | null",
+        "eligible_streams": "string | null",
+        "passing_batch": "string | null",
+        "minimum_cgpa_percentage": "string | null",
+        "cutoff_criteria": "string | null",
+        "active_backlogs_allowed": "string | null",
+        "gender_eligibility": "string | null"
+      },
+      "job_details": {
+        "job_role": "string | null",
+        "salary_ctc": "string | null",
+        "stipend": "string | null",
+        "location": "string | null",
+        "work_mode": "string | null",
+        "employment_type": "string | null"
+      },
+      "recruitment_process": {
+        "hiring_process": "string | null",
+        "number_of_rounds": "string | null",
+        "elimination_rounds": "string | null"
+      },
+      "schedule": {
+        "event_date": "string | null",
+        "time": "string | null",
+        "venue": "string | null",
+        "mode": "string | null"
+      },
+      "communication": {
+        "communication_channel": "string | null",
+        "check_inbox": "string | null",
+        "check_spam_folder": "string | null",
+        "timing_shared_by": "string | null",
+        "additional_instructions": "string | null"
+      },
+      "attachments": {
+        "jd_link": "string | null",
+        "student_eligible_list": "string | null",
+        "additional_documents": "string | null"
+      },
+      "source_metadata": {
+        "issued_by": "string | null",
+        "institution": "string | null",
+        "reminder_notice": "string | null",
+        "notice_type": "string | null"
+      },
+      "additional_extracted_info": [
+        { "label": "string", "category": "string", "value": "string" }
+      ]
+    }
+  ]
 }
 
 Return strictly the JSON object. Do not wrap it in markdown code blocks (\`\`\`json). Just the raw JSON.
@@ -93,29 +125,11 @@ async function localParsePdfBuffer(nodeBuffer: Buffer): Promise<string> {
 async function fetchAndScrapeLink(url: string): Promise<string> {
   const FETCH_TIMEOUT = 3000; // 3 seconds timeout
   try {
-    let targetUrl = url;
-    
-    // Google Drive direct download URL conversion
-    if (url.includes('drive.google.com')) {
-      const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
-      const match = url.match(driveRegex);
-      if (match) {
-        targetUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
-      }
-    }
-
-    // Google Doc export conversion
-    if (targetUrl.includes('docs.google.com/document')) {
-      targetUrl = targetUrl
-        .replace(/\/edit.*$/, '/export?format=txt')
-        .replace(/\/pub.*$/, '/export?format=txt')
-        .replace(/\/view.*$/, '/export?format=txt');
-    }
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-    const response = await fetch(targetUrl, {
+    // Initial request to follow redirect and get the final URL
+    const response1 = await fetch(url, {
       redirect: 'follow',
       signal: controller.signal,
       headers: {
@@ -125,19 +139,54 @@ async function fetchAndScrapeLink(url: string): Promise<string> {
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      console.warn(`Fetch failed for URL ${url} with status: ${response.status}`);
+    if (!response1.ok) {
+      console.warn(`Initial fetch failed for URL ${url} with status: ${response1.status}`);
       return '';
     }
 
-    const contentType = response.headers.get('content-type') || '';
+    let targetUrl = response1.url || url;
+
+    // Google Drive direct download URL conversion
+    if (targetUrl.includes('drive.google.com')) {
+      const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
+      const match = targetUrl.match(driveRegex);
+      if (match) {
+        targetUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+
+    // Google Doc export conversion
+    let wasConverted = false;
+    if (targetUrl.includes('docs.google.com/document')) {
+      targetUrl = targetUrl
+        .replace(/\/edit.*$/, '/export?format=txt')
+        .replace(/\/pub.*$/, '/export?format=txt')
+        .replace(/\/view.*$/, '/export?format=txt');
+      wasConverted = true;
+    }
+
+    // If targetUrl changed (e.g. converted to Google Doc export format), fetch again
+    let finalResponse = response1;
+    if (wasConverted || targetUrl !== response1.url) {
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), FETCH_TIMEOUT);
+      finalResponse = await fetch(targetUrl, {
+        signal: controller2.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      clearTimeout(timeoutId2);
+    }
+
+    const contentType = finalResponse.headers.get('content-type') || '';
     
     if (contentType.includes('application/pdf') || targetUrl.includes('export=download')) {
-      const arrayBuffer = await response.arrayBuffer();
+      const arrayBuffer = await finalResponse.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       return await localParsePdfBuffer(buffer);
     } else {
-      const text = await response.text();
+      const text = await finalResponse.text();
       // If it's HTML, parse it with Cheerio
       if (contentType.includes('text/html') || text.trim().startsWith('<')) {
         const $ = cheerio.load(text);
@@ -201,10 +250,16 @@ export async function POST(req: Request) {
       };
 
       const promptText = `
-Analyze this screenshot/image.
-1. Perform high-accuracy OCR to extract EVERY SINGLE piece of text, details, contacts, links, eligibility criteria, batches, courses, branches, and company names.
-2. If there are any short URLs (like tinyurl, bit.ly, t.me) or JD links, extract them exactly.
-3. Map the extracted details to the requested JSON schema. Make sure you extract all eligible branches (e.g., CSE, IT, ECE, BCA, BBA, MBA, IMBA), batches (e.g., 2026 passing out batch), companies, deadlines, CTC, and stipend info without omitting any detail.
+Analyze this screenshot/image with maximum precision.
+
+1. Perform high-accuracy OCR to extract EVERY SINGLE piece of text visible in this image — every word, number, date, URL, phone number, email, bullet point, header, footer, watermark, and fine print. Nothing should be omitted.
+2. If there are multiple companies or roles listed in the image, separate them and output them as separate objects in the "opportunities" array.
+3. If there are any short URLs (like tinyurl, bit.ly, t.me) or JD links, extract them exactly.
+4. Map the extracted details to the standard JSON schema slots.
+5. For EVERY remaining piece of text not covered by standard slots, create entries in "additional_extracted_info" with proper labels and categories.
+6. Extract all eligible branches (e.g., CSE, IT, ECE, BCA, BBA, MBA, IMBA), batches (e.g., 2026 passing out batch), companies, deadlines, CTC, stipend info, dress code, documents to carry, reporting instructions, contact details, and any other information.
+7. Use null for missing standard fields. NEVER use "Not Mentioned" or similar placeholders.
+8. If a slot explicitly states "NA" or "No" in the source, keep it EXACTLY as "NA" or the respective negative value.
 `;
 
       let lastError: any = null;
@@ -282,13 +337,9 @@ Analyze this screenshot/image.
     // URL Crawling and Refinement Step
     const extractedUrls: string[] = [];
     
-    // Check fields in parsed JSON for URLs
-    if (initialJson.basic_information?.jd_link && initialJson.basic_information.jd_link !== 'Not Mentioned') {
-      extractedUrls.push(initialJson.basic_information.jd_link);
-    }
-    if (initialJson.attachments?.jd_link && initialJson.attachments.jd_link !== 'Not Mentioned') {
-      extractedUrls.push(initialJson.attachments.jd_link);
-    }
+    // Extract ALL URLs present anywhere inside the initial JSON structure
+    const initialJsonString = JSON.stringify(initialJson);
+    extractedUrls.push(...extractUrlsFromText(initialJsonString));
     
     // Scan raw input text for links if not image
     if (method !== 'image' && inputContext) {
@@ -321,14 +372,17 @@ Crawled Link Content:
 ${accumulatedScrapedText}
 
 Your task is to merge these two sources:
-1. Correct any placeholder/missing values ("Not Specified", "Not Mentioned", null, or empty lists) in the initial JSON using the rich details in the crawled link content.
-2. Ensure you extract the following details completely:
+1. The initial JSON contains an array of "opportunities". For each opportunity, correct any null or empty values using the rich details in the crawled link content if the link content refers to that specific company/role.
+2. If the crawled link content contains details for a new company or role that was not in the initial JSON, add a new opportunity object to the "opportunities" array.
+3. Ensure you extract the following details completely for each company/role:
    - Eligible courses, branches, and passing batch (e.g. B.Tech All Branches, BCA, 2026 passing out batch).
    - Salary CTC and stipend details.
    - Number of hiring rounds and round description.
    - Work location, work mode, and eligibility requirements.
    - Deadline dates and times.
-3. Return ONLY a valid JSON object matching the 8-section nested schema perfectly. No explanation, no markdown wrapping.
+4. MERGE "additional_extracted_info" from both sources for each opportunity. Add NEW entries for any additional details found in the crawled content that aren't already captured. Do NOT remove existing entries.
+5. If a slot explicitly states "NA" or a negative value in the source, keep it EXACTLY as "NA" or the respective negative value.
+6. Return ONLY a valid JSON object matching the schema: { "opportunities": [...] }. No explanation, no markdown wrapping.
 `;
 
         let lastRefineError: any = null;
@@ -366,7 +420,31 @@ Your task is to merge these two sources:
       }
     }
 
-    return NextResponse.json({ opportunity: initialJson });
+    // Apply post-extraction cleaning to strip any remaining placeholders
+    let rawObj = initialJson;
+    if (rawObj && !rawObj.opportunities) {
+      rawObj = { opportunities: [rawObj] };
+    }
+
+    const { data: cleanedOpportunity, populatedSections, populatedFieldCount } = cleanExtraction(rawObj);
+
+    let totalAddInfo = 0;
+    if (Array.isArray(cleanedOpportunity.opportunities)) {
+      cleanedOpportunity.opportunities.forEach((o: any) => {
+        if (Array.isArray(o.additional_extracted_info)) {
+          totalAddInfo += o.additional_extracted_info.length;
+        }
+      });
+    }
+
+    return NextResponse.json({
+      opportunity: cleanedOpportunity,
+      extraction_stats: {
+        populated_sections: populatedSections,
+        populated_field_count: populatedFieldCount,
+        additional_info_count: totalAddInfo,
+      },
+    });
 
   } catch (error: any) {
     console.error('Parser Error:', error);

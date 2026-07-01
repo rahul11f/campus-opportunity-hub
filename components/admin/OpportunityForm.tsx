@@ -6,8 +6,10 @@ import { toast } from 'sonner';
 import type {
   ExtractedOpportunity,
   OpportunityType,
+  AdditionalInfoItem,
 } from '@/types/opportunity';
 import { AdvancedSlotsAccordion } from './AdvancedSlotsAccordion';
+import { OpportunityCard } from '@/components/opportunity/OpportunityCard';
 
 type Props = {
   initialData?: Partial<ExtractedOpportunity> | null;
@@ -15,6 +17,8 @@ type Props = {
   sourceLink?: string | null;
   existingId?: string;
   contributionId?: string;
+  additionalInfo?: AdditionalInfoItem[];
+  onSuccess?: () => void;
 };
 
 const TYPES: OpportunityType[] = [
@@ -51,6 +55,8 @@ export function OpportunityForm({
   sourceLink = '',
   existingId,
   contributionId,
+  additionalInfo = [],
+  onSuccess,
 }: Props) {
   const router = useRouter();
 
@@ -69,8 +75,25 @@ export function OpportunityForm({
   const salaryVal = initialData?.salary || (initialData as any)?.job_details?.salary_ctc || '';
   const locationVal = initialData?.location || (initialData as any)?.job_details?.location || '';
   const applyLinkVal = initialData?.apply_link || (initialData as any)?.basic_information?.jd_link || (initialData as any)?.attachments?.jd_link || '';
-  const instructionsVal = initialData?.instructions || (initialData as any)?.communication?.additional_instructions || '';
+  // Build instructions from explicit field + additional info items categorized as instructions/logistics
+  const baseInstructions = initialData?.instructions || (initialData as any)?.communication?.additional_instructions || '';
+  const additionalInstructionItems = additionalInfo
+    .filter(item => item.category === 'instructions' || item.category === 'logistics')
+    .map(item => `${item.label}: ${item.value}`)
+    .join('\n');
+  const instructionsVal = [baseInstructions, additionalInstructionItems].filter(Boolean).join('\n\n');
   const deadlineVal = toLocalDateTime(initialData?.deadline || (initialData as any)?.basic_information?.application_deadline);
+
+  // Map additional info items into custom eligibility slots
+  const additionalSlots: Record<string, string> = {};
+  for (const item of additionalInfo) {
+    if (item.category !== 'instructions' && item.category !== 'logistics') {
+      const slotKey = item.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      if (slotKey) {
+        additionalSlots[slotKey] = item.value;
+      }
+    }
+  }
 
   const initialEligibility = initialData?.eligibility || {};
   const initialBranches = (initialEligibility as any).branches || ((initialEligibility as any).eligible_branches ? [(initialEligibility as any).eligible_branches] : []);
@@ -133,12 +156,13 @@ export function OpportunityForm({
       institution: (initialData as any)?.source_metadata?.institution || '',
       reminder_notice: (initialData as any)?.source_metadata?.reminder_notice || '',
       notice_type: (initialData as any)?.source_metadata?.notice_type || '',
+      ...additionalSlots,
     },
     interview_process: {
       rounds: initialData?.interview_process?.rounds || null,
       description: initialData?.interview_process?.description || [],
     },
-    raw_text: rawText,
+    raw_text: rawText || (initialData ? JSON.stringify(initialData, null, 2) : ''),
   });
 
   const confidence =
@@ -181,14 +205,16 @@ export function OpportunityForm({
     setSaving(true);
 
     try {
+      // Safely parse deadline to avoid RangeError crash on empty string
+      let parsedDeadline = null;
+      if (form.deadline && !isNaN(new Date(form.deadline).getTime())) {
+        parsedDeadline = new Date(form.deadline).toISOString();
+      }
+
       const payload = {
         ...form,
         is_published: isPublished,
-        deadline: form.deadline
-          ? new Date(
-              form.deadline
-            ).toISOString()
-          : null,
+        deadline: parsedDeadline,
         apply_link:
           form.apply_link || null,
         source_link:
@@ -221,6 +247,14 @@ export function OpportunityForm({
           );
         }
 
+        if (data?.details) {
+          const fieldErrors = Object.entries(data.details)
+            .filter(([key]) => key !== '_errors')
+            .map(([key, val]: any) => `${key}: ${val._errors?.join(', ') || 'Invalid field'}`)
+            .join('; ');
+          throw new Error(`Validation failed - ${fieldErrors}`);
+        }
+
         throw new Error(
           data?.error || 'Save failed'
         );
@@ -232,16 +266,20 @@ export function OpportunityForm({
           : 'Draft saved successfully'
       );
 
-      if (isPublished) {
-        router.push(
-          `/opportunities/${
-            data.id || existingId
-          }`
-        );
-      } else {
-        router.push(
-          '/admin/listings?status=draft'
-        );
+      onSuccess?.();
+
+      if (!onSuccess) {
+        if (isPublished) {
+          router.push(
+            `/opportunities/${
+              data.id || existingId
+            }`
+          );
+        } else {
+          router.push(
+            '/admin/listings?status=draft'
+          );
+        }
       }
 
       router.refresh();
@@ -419,32 +457,33 @@ export function OpportunityForm({
 
       </div>
 
-      <div className="border rounded-2xl p-5">
-        <h3 className="text-lg font-semibold mb-4">
-          Preview
-        </h3>
-
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>
-              {preview.company}
-            </strong>
-          </div>
-          <div>{preview.role}</div>
-          <div>{preview.type}</div>
-          <div>
-            {preview.salary ||
-              'Not specified'}
-          </div>
-          <div>
-            {preview.location ||
-              'Not specified'}
-          </div>
-          <div>{preview.deadline}</div>
-          <div>
-            {preview.instructions ||
-              'No instructions'}
-          </div>
+      <div className="border border-slate-200 dark:border-border rounded-3xl p-6 bg-slate-50 dark:bg-muted/10 flex flex-col justify-between h-fit space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-foreground mb-4">
+            Student Opportunity Preview
+          </h3>
+          <OpportunityCard opportunity={{
+            id: 'preview',
+            company: form.company || 'Company Name',
+            role: form.role || 'Job Role',
+            type: form.type || 'placement',
+            salary: form.salary,
+            location: form.location,
+            deadline: form.deadline || null,
+            eligibility: {
+              cgpa: form.eligibility.cgpa || form.eligibility.minimum_cgpa_percentage || null,
+              branches: form.eligibility.branches || (form.eligibility.eligible_branches ? [form.eligibility.eligible_branches] : []),
+              batch: form.eligibility.batch || form.eligibility.passing_batch || null,
+              backlog: form.eligibility.backlog || form.eligibility.active_backlogs_allowed || null,
+            },
+            company_logo: form.eligibility.company_logo || null,
+          }} />
+        </div>
+        <div className="text-xs text-muted-foreground p-3 bg-white dark:bg-card border rounded-xl space-y-1">
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Form Checklist Details:</p>
+          <p><strong>Instructions:</strong> {form.instructions ? (form.instructions.length > 100 ? `${form.instructions.substring(0, 100)}...` : form.instructions) : 'None'}</p>
+          <p><strong>Apply Link:</strong> {form.apply_link || 'None'}</p>
+          <p><strong>Source Link:</strong> {form.source_link || 'None'}</p>
         </div>
       </div>
     </div>

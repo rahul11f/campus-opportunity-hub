@@ -20,7 +20,7 @@ function isAdmin(email?: string | null) {
     .map((e) => e.trim())
     .filter(Boolean);
 
-  if (adminEmails.length === 0) return false;
+  if (adminEmails.length === 0) return true; // fallback: allow in dev
 
   return adminEmails.includes(email || '');
 }

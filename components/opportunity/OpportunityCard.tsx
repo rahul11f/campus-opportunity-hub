@@ -86,12 +86,18 @@ export function OpportunityCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <Link
-            href={`/opportunities/${opportunity.id}`}
-            className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors"
-          >
-            {opportunity.role}
-          </Link>
+          {String(opportunity.id).startsWith('preview') ? (
+            <span className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1">
+              {opportunity.role}
+            </span>
+          ) : (
+            <Link
+              href={`/opportunities/${opportunity.id}`}
+              className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors"
+            >
+              {opportunity.role}
+            </Link>
+          )}
           <div className="text-sm font-medium text-slate-500 dark:text-muted-foreground mt-0.5">
             {opportunity.company}
           </div>
@@ -122,13 +128,20 @@ export function OpportunityCard({
       <div className="px-6 py-4 bg-slate-50 dark:bg-muted/50 border-t border-slate-100 dark:border-border flex items-center justify-between text-sm">
         <CountdownTimer deadline={opportunity.deadline} />
         
-        <Link
-          href={`/opportunities/${opportunity.id}`}
-          className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
-        >
-          View Details
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
+        {String(opportunity.id).startsWith('preview') ? (
+          <span className="flex items-center gap-1.5 font-semibold text-slate-400 cursor-not-allowed">
+            View Details
+            <ArrowRight className="w-4 h-4" />
+          </span>
+        ) : (
+          <Link
+            href={`/opportunities/${opportunity.id}`}
+            className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            View Details
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -150,8 +150,6 @@ export async function POST(request: NextRequest) {
       source_link: sourceLink || null,
       status: 'pending',
       points_awarded: 0,
-      contributor_name: contributorName,
-      contributor_email: contributorEmail,
     });
 
   if (error) {

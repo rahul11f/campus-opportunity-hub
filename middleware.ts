@@ -56,14 +56,26 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (path.startsWith('/dashboard') && !user) {
-    const redirectResponse = NextResponse.redirect(
-      new URL('/login', req.url)
-    );
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie);
-    });
-    return redirectResponse;
+  if (path.startsWith('/dashboard')) {
+    if (!user) {
+      const redirectResponse = NextResponse.redirect(
+        new URL('/login', req.url)
+      );
+      response.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
+    }
+
+    if (isAdmin(user.email)) {
+      const redirectResponse = NextResponse.redirect(
+        new URL('/admin', req.url)
+      );
+      response.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
+    }
   }
 
   if (path.startsWith('/admin')) {

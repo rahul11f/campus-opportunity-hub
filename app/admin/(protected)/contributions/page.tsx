@@ -54,6 +54,89 @@ export default function ContributionsPage() {
   async function parseWithAI(item: any) {
     try {
       setLoading(true);
+      
+      // Check if this contribution content has pre-structured slot data from student AI parse
+      const slotsJsonMatch = item.content?.match(/\[SLOTS_JSON_DATA\]([\s\S]*?)\[\/SLOTS_JSON_DATA\]/);
+      if (slotsJsonMatch && slotsJsonMatch[1]) {
+        try {
+          const parsedData = JSON.parse(slotsJsonMatch[1].trim());
+          // The student page saves it with slots inside a 'slots' object, let's normalize it
+          const rawOpportunity = parsedData.eligibility || {};
+          
+          // Map to ExtractedOpportunity structure
+          const formattedOpportunity = {
+            basic_information: {
+              company_name: rawOpportunity.company_name || parsedData.title || '',
+              company_logo: rawOpportunity.company_logo_url || '',
+              opportunity_type: rawOpportunity.opportunity_type || parsedData.contributionType || 'placement',
+              round_name: rawOpportunity.round_name || '',
+              verified_status: rawOpportunity.verified_status || '',
+              application_deadline: rawOpportunity.application_deadline || '',
+              jd_link: rawOpportunity.jd_link || parsedData.sourceLink || ''
+            },
+            eligibility: rawOpportunity,
+            job_details: {
+              job_role: rawOpportunity.job_role_position || '',
+              salary_ctc: rawOpportunity.salary_ctc || '',
+              stipend: rawOpportunity.stipend || '',
+              location: rawOpportunity.work_location || '',
+              work_mode: rawOpportunity.work_mode || '',
+              employment_type: rawOpportunity.employment_type || ''
+            },
+            recruitment_process: {
+              hiring_process: rawOpportunity.selection_process_steps || '',
+              number_of_rounds: rawOpportunity.number_of_rounds || '',
+              elimination_rounds: rawOpportunity.elimination_rounds || ''
+            },
+            schedule: {
+              event_date: rawOpportunity.event_date || '',
+              time: rawOpportunity.event_time || '',
+              venue: rawOpportunity.venue || '',
+              mode: rawOpportunity.mode || ''
+            },
+            communication: {
+              communication_channel: rawOpportunity.communication_channel || '',
+              check_inbox: rawOpportunity.check_inbox || '',
+              check_spam_folder: rawOpportunity.check_spam_folder || '',
+              timing_shared_by: rawOpportunity.timing_shared_by || '',
+              additional_instructions: rawOpportunity.additional_instructions || ''
+            },
+            attachments: {
+              jd_link: rawOpportunity.jd_link || parsedData.sourceLink || '',
+              student_eligible_list: rawOpportunity.student_eligible_list_upload || '',
+              additional_documents: rawOpportunity.additional_documents || ''
+            },
+            source_metadata: {
+              issued_by: rawOpportunity.posted_by || '',
+              institution: rawOpportunity.institution_college_name || '',
+              reminder_notice: rawOpportunity.reminder_notice || '',
+              notice_type: rawOpportunity.source_type || ''
+            },
+            additional_extracted_info: []
+          };
+          
+          localStorage.setItem('draft_opportunity', JSON.stringify(formattedOpportunity));
+          localStorage.setItem('draft_contribution_id', item.id);
+          router.push('/admin/new?draft=true');
+          return;
+        } catch (e) {
+          console.error('Failed to parse pre-structured JSON', e);
+        }
+      }
+
+      // Check if it's already a full JSON opportunity
+      if (item.content?.trim().startsWith('{') && item.content?.trim().endsWith('}')) {
+        try {
+          const parsed = JSON.parse(item.content.trim());
+          if (parsed.basic_information || parsed.company || parsed.role) {
+            localStorage.setItem('draft_opportunity', JSON.stringify(parsed));
+            localStorage.setItem('draft_contribution_id', item.id);
+            router.push('/admin/new?draft=true');
+            return;
+          }
+        } catch (e) {}
+      }
+
       const payload = new FormData();
       payload.append('method', 'text');
       

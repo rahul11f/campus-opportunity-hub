@@ -154,18 +154,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setPendingCount(count || 0);
 
       // Real-time subscription to contribution changes
-      channel = supabase
-        .channel('admin-layout-contrib')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_contributions' }, (payload) => {
-          supabase
-            .from('student_contributions')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'pending')
-            .then(({ count: c }) => {
-              setPendingCount(c || 0);
-            });
-        })
-        .subscribe();
+      try {
+        const subChannel = supabase.channel('admin-layout-contrib');
+        if (subChannel) {
+          channel = subChannel
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'student_contributions' }, (payload) => {
+              supabase
+                .from('student_contributions')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending')
+                .then(({ count: c }) => {
+                  setPendingCount(c || 0);
+                });
+            })
+            .subscribe();
+        }
+      } catch (err) {
+        console.warn('Real-time subscription failed:', err);
+      }
     }
 
     init();

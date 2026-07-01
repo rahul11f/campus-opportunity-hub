@@ -15,6 +15,7 @@ import { classifyUrl as classifyContent } from '@/lib/pipeline/contentClassifier
 import { cleanText, truncateText } from '@/lib/pipeline/textCleaner';
 import { cleanOcrText } from '@/lib/pipeline/ocrTextCleaner';
 import { extractWithGemini } from '@/lib/pipeline/geminiExtractor';
+import { cleanExtraction } from '@/lib/pipeline/extractionCleaner';
 import { DetectedUrl } from '@/types/opportunity';
 
 const MAX_URLS = 10;
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
       if (result.content) {
         const cleaned = cleanText(result.content).cleaned;
 
-        urlObj.content = truncateText(cleaned, 3000);
+        urlObj.content = truncateText(cleaned, 15000);
         urlObj.status = 'fetched';
 
         fetchedContents.push(
@@ -241,8 +242,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await extractWithGemini(
-      truncateText(cleanedRawText, 8000),
-      truncateText(combinedFetchedContent, 10000)
+      truncateText(cleanedRawText, 25000),
+      truncateText(combinedFetchedContent, 30000)
     );
 
     extracted = result.data;
@@ -258,14 +259,47 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Apply post-extraction cleaning to strip any remaining placeholders
+  let cleanedExtracted = extracted;
+  let extractionStats = null;
+
+  if (extracted) {
+    // If Gemini output was just a single object without "opportunities" wrapper, wrap it
+    let rawObj = extracted as any;
+    if (rawObj && !rawObj.opportunities) {
+      rawObj = { opportunities: [rawObj] };
+    }
+
+    const { data, populatedSections, populatedFieldCount } = cleanExtraction(
+      rawObj as unknown as Record<string, unknown>
+    );
+    cleanedExtracted = data as typeof extracted;
+    
+    let totalAddInfo = 0;
+    if (Array.isArray((data as any).opportunities)) {
+      (data as any).opportunities.forEach((o: any) => {
+        if (Array.isArray(o.additional_extracted_info)) {
+          totalAddInfo += o.additional_extracted_info.length;
+        }
+      });
+    }
+
+    extractionStats = {
+      populated_sections: populatedSections,
+      populated_field_count: populatedFieldCount,
+      additional_info_count: totalAddInfo,
+    };
+  }
+
   return NextResponse.json({
     success: true,
     detectedUrls: detectedUrls.map((u) => ({
       ...u,
       content: null,
     })),
-    extracted,
+    extracted: cleanedExtracted,
     extractionError,
+    extractionStats,
     cleanedText:
       cleanedRawText.substring(0, 500) +
       (cleanedRawText.length > 500 ? '...' : ''),

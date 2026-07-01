@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Send, FileText, Link2, ChevronDown, ChevronUp, CheckCircle, Info, ShieldCheck, GraduationCap, Award, HelpCircle, Users2, Calendar, Briefcase, Settings } from 'lucide-react';
+import { Send, FileText, Link2, ChevronDown, ChevronUp, CheckCircle, Info, ShieldCheck, GraduationCap, Award, HelpCircle, Users2, Calendar, Briefcase, Settings, Wand2, PlusCircle } from 'lucide-react';
+import { StudentAIParser } from '@/components/student/StudentAIParser';
 
 export default function ContributePage() {
   const [submitting, setSubmitting] = useState(false);
   const [openSection, setOpenSection] = useState<number | null>(1);
+  const [mode, setMode] = useState<'manual' | 'ai'>('ai');
 
   const [form, setForm] = useState<any>({
     title: '',
@@ -190,11 +192,42 @@ ${JSON.stringify({ eligibility: e, ...form }, null, 2)}
           Contribute Opportunity Notice
         </h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-base">
-          Fill out all available fields or paste raw notice text below to submit your contribution for verified approval.
+          Fill out all available fields manually or use the AI parser to scan flyers and links to submit notice contributions for verified approval.
         </p>
       </div>
 
-      <div className="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-card transition-all">
+      {/* Mode toggle */}
+      <div className="flex gap-2 p-1 bg-muted rounded-xl max-w-sm mb-6">
+        <button
+          onClick={() => setMode('ai')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
+            mode === 'ai'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+          AI Notice Parser
+        </button>
+        <button
+          onClick={() => setMode('manual')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
+            mode === 'manual'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <PlusCircle className="w-3.5 h-3.5" />
+          Manual Form
+        </button>
+      </div>
+
+      {mode === 'ai' ? (
+        <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card">
+          <StudentAIParser />
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-card transition-all">
         {/* Core Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
@@ -473,6 +506,7 @@ ${JSON.stringify({ eligibility: e, ...form }, null, 2)}
           {submitting ? 'Submitting...' : 'Submit Notice Contribution'}
         </button>
       </div>
+      )}
     </div>
   );
 }

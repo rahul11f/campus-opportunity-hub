@@ -1,4 +1,4 @@
-﻿export type OpportunityType =
+export type OpportunityType =
   | 'placement'
   | 'internship'
   | 'hackathon'
@@ -155,6 +155,22 @@ export interface StudentPoints {
   updated_at: string;
 }
 
+export type AdditionalInfoCategory =
+  | 'instructions'
+  | 'contact'
+  | 'logistics'
+  | 'documents'
+  | 'dates'
+  | 'compensation'
+  | 'eligibility'
+  | 'other';
+
+export interface AdditionalInfoItem {
+  label: string;
+  category: AdditionalInfoCategory;
+  value: string;
+}
+
 export interface ExtractedOpportunity {
   company: string | null;
   role: string | null;
@@ -170,6 +186,7 @@ export interface ExtractedOpportunity {
   deadline: string | null;
   tags: string[] | null;
   confidence_score: number;
+  additional_extracted_info?: AdditionalInfoItem[];
 }
 
 export interface DetectedUrl {

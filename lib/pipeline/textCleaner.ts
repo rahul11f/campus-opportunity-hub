@@ -161,7 +161,10 @@ export function extractMainContent(html: string): string {
     .replace(/<\/div>/gi, "\n")
     .replace(/<\/li>/gi, "\n")
     .replace(/<\/h[1-6]>/gi, "\n\n")
-    .replace(/<li>/gi, "• ");
+    .replace(/<li>/gi, "• ")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>/gi, " | ")
+    .replace(/<\/th>/gi, " | ");
 
   return cleanText(cleaned).cleaned;
 }

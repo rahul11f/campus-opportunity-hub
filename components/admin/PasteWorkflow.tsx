@@ -15,14 +15,20 @@ import { OpportunityForm } from './OpportunityForm';
 import {
   ExtractedOpportunity,
   DetectedUrl,
+  AdditionalInfoItem,
 } from '@/types/opportunity';
 
 type ProcessResponse = {
   success: boolean;
   detectedUrls: DetectedUrl[];
-  extracted: ExtractedOpportunity | null;
+  extracted: (ExtractedOpportunity & { additional_extracted_info?: AdditionalInfoItem[] }) | null;
   extractionError: string | null;
   cleanedText: string;
+  extractionStats?: {
+    populated_sections: string[];
+    populated_field_count: number;
+    additional_info_count: number;
+  };
   diagnostics?: {
     urlCount: number;
     fetchedCount: number;
@@ -94,6 +100,11 @@ export function PasteWorkflow() {
     useState<ProcessResponse['diagnostics']>();
   const [extractionError, setExtractionError] =
     useState<string | null>(null);
+  const [additionalInfoItems, setAdditionalInfoItems] =
+    useState<AdditionalInfoItem[]>([]);
+  const [extractionStats, setExtractionStats] =
+    useState<ProcessResponse['extractionStats']>();
+  const [selectedOppIndex, setSelectedOppIndex] = useState(0);
 
   async function processNotice() {
     if (!rawText.trim()) {
@@ -112,6 +123,9 @@ export function PasteWorkflow() {
     setFallbackDraft(null);
     setDetectedUrls([]);
     setDiagnostics(undefined);
+    setAdditionalInfoItems([]);
+    setExtractionStats(undefined);
+    setSelectedOppIndex(0);
 
     try {
       const res = await fetch('/api/process-notice', {
@@ -140,7 +154,14 @@ export function PasteWorkflow() {
       setDiagnostics(data.diagnostics);
 
       if (data.extracted) {
-        setExtractedData(data.extracted);
+        const rootObj = data.extracted as any;
+        if (rootObj.opportunities && Array.isArray(rootObj.opportunities)) {
+          setExtractedData(rootObj);
+          setAdditionalInfoItems(rootObj.opportunities[0]?.additional_extracted_info || []);
+        } else {
+          setExtractedData({ opportunities: [data.extracted] } as any);
+          setAdditionalInfoItems(data.extracted.additional_extracted_info || []);
+        }
         setFallbackDraft(null);
       } else {
         const fallback: Partial<ExtractedOpportunity> = {
@@ -152,7 +173,7 @@ export function PasteWorkflow() {
             getBestSourceLink(data.detectedUrls || []) || '',
         };
 
-        setExtractedData(null);
+        setExtractedData({ opportunities: [fallback as any] } as any);
         setFallbackDraft(fallback);
       }
 
@@ -164,6 +185,10 @@ export function PasteWorkflow() {
         toast.warning(
           'Extraction completed but AI could not structure the notice.'
         );
+      }
+
+      if (data.extractionStats) {
+        setExtractionStats(data.extractionStats);
       }
     } catch (err) {
       toast.error(
@@ -179,8 +204,11 @@ export function PasteWorkflow() {
   const sourceLink =
     getBestSourceLink(detectedUrls);
 
-  const reviewData =
-    extractedData || fallbackDraft;
+  const opportunitiesList = (extractedData as any)?.opportunities || [];
+  const reviewData = opportunitiesList[selectedOppIndex] || fallbackDraft;
+
+  // Sync additionalInfoItems when tab changes
+  const activeAdditionalInfo = reviewData?.additional_extracted_info || [];
 
   return (
     <div className="space-y-6">
@@ -329,10 +357,47 @@ export function PasteWorkflow() {
             }
           />
 
+          {extractionStats && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+              Extracted <strong>{extractionStats.populated_field_count}</strong> fields across{' '}
+              <strong>{extractionStats.populated_sections.length}</strong> sections
+              {extractionStats.additional_info_count > 0 && (
+                <> + <strong>{extractionStats.additional_info_count}</strong> additional details</>    
+              )}
+            </div>
+          )}
+
+          {opportunitiesList.length > 1 && (
+            <div className="flex flex-wrap gap-1 border-b border-border pb-1">
+              {opportunitiesList.map((opp: any, idx: number) => {
+                const companyName = opp.basic_information?.company_name || `Company ${idx + 1}`;
+                const isSelected = selectedOppIndex === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOppIndex(idx);
+                    }}
+                    className={`px-4 py-2 rounded-t-xl text-xs font-bold transition-all border-b-2 ${
+                      isSelected
+                        ? 'border-primary text-primary bg-primary/5'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    {companyName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <OpportunityForm
+            key={selectedOppIndex}
             initialData={reviewData}
             rawText={cleanedText || rawText}
             sourceLink={sourceLink}
+            additionalInfo={activeAdditionalInfo}
           />
         </div>
       )}
