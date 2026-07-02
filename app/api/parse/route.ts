@@ -110,8 +110,30 @@ function extractUrlsFromText(text: string): string[] {
   return Array.from(new Set(matches));
 }
 
-// Playwright-free PDF parser implemented locally
 async function localParsePdfBuffer(nodeBuffer: Buffer): Promise<string> {
+  try {
+    if (process.env.GEMINI_API_KEY) {
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const pdfPart = {
+        inlineData: {
+          data: nodeBuffer.toString('base64'),
+          mimeType: 'application/pdf'
+        }
+      };
+      console.log('Running Gemini native PDF extraction...');
+      const result = await model.generateContent([
+        "Extract all text from this PDF accurately. Preserve table structures as readable text or markdown. Do NOT output JSON, just the text.",
+        pdfPart
+      ]);
+      const text = result.response.text();
+      if (text) return text.trim();
+    }
+  } catch (err) {
+    console.error('Gemini PDF parse failed, falling back to pdf-parse:', err);
+  }
+
   try {
     const pdfParse = (await import('pdf-parse')).default;
     const data = await pdfParse(nodeBuffer);
@@ -249,11 +271,12 @@ export async function POST(req: Request) {
         }
       };
 
-      const promptText = `
-Please transcribe all text visible in this image accurately.
+      let isPdf = mimeType === 'application/pdf';
+      const promptText = isPdf 
+        ? "Extract all text and tables from this document accurately. Preserve table structures as readable text or markdown."
+        : `Please transcribe all text visible in this image accurately.
 IMPORTANT: If you see any URLs (links) that are split across multiple lines, you MUST reconstruct them into a single continuous URL without any spaces or line breaks.
-Do not format as markdown. Just output the raw text.
-`;
+Do not format as markdown. Just output the raw text.`;
 
       let lastError: any = null;
       let rawText = '';
