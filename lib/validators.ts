@@ -143,6 +143,7 @@ export const OpportunityCreateSchema = z.object({
   is_published: z.boolean().default(false),
   tags: z.array(z.string()).nullable().optional(),
   attachments_json: z.array(AttachmentItemSchema).nullable().optional(),
+  additional_extracted_info: z.array(AdditionalInfoItemSchema).nullable().optional(),
   contribution_id: z.string().uuid().nullable().optional(),
 });
 

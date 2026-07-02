@@ -262,6 +262,8 @@ export async function POST(request: NextRequest) {
         parsed.data.apply_link || null,
       source_link:
         parsed.data.source_link || null,
+      additional_extracted_info:
+        parsed.data.additional_extracted_info || [],
     })
     .select()
     .single();

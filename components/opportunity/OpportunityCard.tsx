@@ -88,13 +88,20 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
   const comm = opportunity.communication || {};
   const atts = opportunity.attachments || {};
 
+  // Track which labels are consumed by predefined slots
+  const consumedLabels = new Set<string>();
+
   // Generic helper to search in additional_extracted_info
   const findInAdditionalInfo = (keywords: string[]) => {
     if (!opportunity.additional_extracted_info) return null;
     const match = opportunity.additional_extracted_info.find((item: any) =>
       keywords.some(kw => item.label.toLowerCase().includes(kw.toLowerCase()))
     );
-    return match ? match.value : null;
+    if (match) {
+      consumedLabels.add(match.label);
+      return match.value;
+    }
+    return null;
   };
 
   // Resolve Bond Detail
@@ -232,6 +239,10 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
 
   console.log('OpportunityCard fields resolved:', { raw: opportunity, resolved: fields });
 
+  const unconsumedAdditionalInfo = opportunity.additional_extracted_info?.filter(
+    (item: any) => !consumedLabels.has(item.label) && item.value && String(item.value).trim() !== '' && !String(item.value).toLowerCase().includes('not specified')
+  ) || [];
+
   const attachments = opportunity.attachments_json || [];
   const pdfAttachments = attachments.filter((a: any) => a.file_type === 'pdf');
   const excelAttachments = attachments.filter((a: any) => a.file_type === 'eligibility_list');
@@ -291,59 +302,98 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
         </div>
 
         {/* Eligibility Criteria Section */}
-        <div className="space-y-2.5 border-t border-slate-100 dark:border-border pt-4">
-          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <GraduationCap className="w-3.5 h-3.5" /> Eligibility Criteria
-          </h4>
-          <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-muted/20 p-3.5 rounded-2xl border border-slate-100 dark:border-border/30">
-            <InfoGridCell label="Course" value={fields.course} />
-            <InfoGridCell label="Batch" value={fields.batch} />
-            <InfoGridCell label="Cut Off" value={fields.cutoff} />
-            <InfoGridCell label="Gender Preference" value={fields.gender} />
-            <div className="col-span-2">
-              <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Eligible Branches</p>
-              <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.branch}</p>
+        {((fields.course && !fields.course.toLowerCase().includes('not specified')) || (fields.batch && !fields.batch.toLowerCase().includes('not specified')) || (fields.cutoff && !fields.cutoff.toLowerCase().includes('not specified')) || (fields.gender && !fields.gender.toLowerCase().includes('not specified')) || (fields.branch && !fields.branch.toLowerCase().includes('not specified'))) && (
+          <div className="space-y-2.5 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5" /> Eligibility Criteria
+            </h4>
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-muted/20 p-3.5 rounded-2xl border border-slate-100 dark:border-border/30">
+              <InfoGridCell label="Course" value={fields.course} />
+              <InfoGridCell label="Batch" value={fields.batch} />
+              <InfoGridCell label="Cut Off" value={fields.cutoff} />
+              <InfoGridCell label="Gender Preference" value={fields.gender} />
+              {fields.branch && !fields.branch.toLowerCase().includes('not specified') && (
+                <div className="col-span-2">
+                  <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Eligible Branches</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.branch}</p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Job Description & Requirements */}
-        <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
-          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5" /> Skills & Responsibilities
-          </h4>
-          <div>
-            <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Required Skills</p>
-            <p className="text-xs font-medium text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.skills}</p>
+        {((fields.skills && !fields.skills.toLowerCase().includes('not specified')) || (fields.responsibilities && !fields.responsibilities.toLowerCase().includes('not specified'))) && (
+          <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Skills & Responsibilities
+            </h4>
+            {fields.skills && !fields.skills.toLowerCase().includes('not specified') && (
+              <div>
+                <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Required Skills</p>
+                <p className="text-xs font-medium text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.skills}</p>
+              </div>
+            )}
+            {fields.responsibilities && !fields.responsibilities.toLowerCase().includes('not specified') && (
+              <div>
+                <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Key Responsibilities</p>
+                <p className="text-xs text-slate-600 dark:text-foreground/80 line-clamp-2 leading-relaxed">{fields.responsibilities}</p>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Key Responsibilities</p>
-            <p className="text-xs text-slate-600 dark:text-foreground/80 line-clamp-2 leading-relaxed">{fields.responsibilities}</p>
-          </div>
-        </div>
+        )}
 
         {/* Recruitment & Selection */}
-        <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
-          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-            <CheckSquare className="w-3.5 h-3.5" /> Selection & Timeline
-          </h4>
-          <div className="space-y-2 text-xs">
-            <div>
-              <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mr-1.5">Selection:</span>
-              <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.selectionProcess}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Date</span>
-                <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.campusDate}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Location</span>
-                <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.interviewLocation}</span>
+        {((fields.selectionProcess && !fields.selectionProcess.toLowerCase().includes('not specified')) || (fields.campusDate && !fields.campusDate.toLowerCase().includes('not specified')) || (fields.interviewLocation && !fields.interviewLocation.toLowerCase().includes('not specified'))) && (
+          <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <CheckSquare className="w-3.5 h-3.5" /> Selection & Timeline
+            </h4>
+            <div className="space-y-2 text-xs">
+              {fields.selectionProcess && !fields.selectionProcess.toLowerCase().includes('not specified') && (
+                <div>
+                  <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mr-1.5">Selection:</span>
+                  <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.selectionProcess}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {fields.campusDate && !fields.campusDate.toLowerCase().includes('not specified') && (
+                  <div>
+                    <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Date</span>
+                    <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.campusDate}</span>
+                  </div>
+                )}
+                {fields.interviewLocation && !fields.interviewLocation.toLowerCase().includes('not specified') && (
+                  <div>
+                    <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Location</span>
+                    <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.interviewLocation}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Dynamic Additional Details */}
+        {unconsumedAdditionalInfo.length > 0 && (
+          <div className="space-y-3 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Additional Details
+            </h4>
+            <div className="grid grid-cols-2 gap-3 bg-slate-50/80 dark:bg-muted/10 p-4 rounded-2xl border border-slate-100 dark:border-border/30">
+              {unconsumedAdditionalInfo.map((item: any, idx: number) => (
+                <div key={idx} className={item.value.length > 50 ? "col-span-2" : "col-span-1"}>
+                  <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-1 line-clamp-1">
+                    {item.label}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 whitespace-pre-wrap break-words">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* File Attachments */}
         {(pdfAttachments.length > 0 || excelAttachments.length > 0 || otherAttachments.length > 0) && (
@@ -366,14 +416,16 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
         )}
 
         {/* Terms & Instructions */}
-        <div className="space-y-1 border-t border-slate-100 dark:border-border pt-4">
-          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest">
-            Terms & Conditions / Guidelines
-          </h4>
-          <p className="text-xs text-slate-500 dark:text-muted-foreground line-clamp-2 leading-relaxed">
-            {fields.terms}
-          </p>
-        </div>
+        {fields.terms && !fields.terms.toLowerCase().includes('not specified') && (
+          <div className="space-y-1 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest">
+              Terms & Conditions / Guidelines
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+              {fields.terms}
+            </p>
+          </div>
+        )}
 
       </div>
 
@@ -424,6 +476,7 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
 }
 
 function InfoRow({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  if (!value || String(value).toLowerCase().includes('not specified') || String(value).toLowerCase().includes('not declared')) return null;
   return (
     <div className="flex items-start gap-2.5">
       <div className="text-slate-400 dark:text-muted-foreground mt-0.5 shrink-0">{icon}</div>
@@ -436,6 +489,7 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon: R
 }
 
 function InfoGridCell({ label, value }: { label: string; value: string }) {
+  if (!value || String(value).toLowerCase().includes('not specified') || String(value).toLowerCase().includes('not declared')) return null;
   return (
     <div>
       <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">{label}</p>

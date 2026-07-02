@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.opportunities (
   source_link TEXT,
   raw_text TEXT,
   deadline TIMESTAMPTZ,
+  additional_extracted_info JSONB DEFAULT '[]'::jsonb,
 
   featured BOOLEAN DEFAULT false,
   is_expired BOOLEAN DEFAULT false,
