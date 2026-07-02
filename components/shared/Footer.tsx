@@ -9,6 +9,8 @@ import {
   Twitter,
 } from 'lucide-react';
 
+import { SiteLogo } from '@/components/ui/SiteLogo';
+
 export function Footer() {
   return (
     <footer className="relative border-t border-white/5 bg-background overflow-hidden mt-12">
@@ -17,12 +19,10 @@ export function Footer() {
         
         <div className="flex flex-col items-center text-center mb-10">
           <Link href="/" className="group flex flex-col items-center gap-3 mb-4">
-            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.3)] border border-white/20 transition-transform group-hover:scale-110">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <SiteLogo size="md" />
             <div>
               <span className="text-xl font-black tracking-tight block bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                CampusHub
+                Campus Opportunity Hub
               </span>
               <span className="text-[10px] font-semibold text-primary uppercase tracking-widest mt-0.5 block">
                 Premium Student Network

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Save, ShieldCheck, Mail, Globe, Bell } from 'lucide-react';
 import { toast } from 'sonner';
+import { CleanupPanel } from '@/components/admin/CleanupPanel';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
@@ -169,6 +170,9 @@ export default function SettingsPage() {
             </label>
           </div>
         </div>
+
+        {/* Timeline Cleanup */}
+        <CleanupPanel />
       </div>
     </div>
   );

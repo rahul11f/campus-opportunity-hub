@@ -1,4 +1,4 @@
-﻿import { Metadata } from 'next';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { OpportunityForm } from '@/components/admin/OpportunityForm';
@@ -47,6 +47,7 @@ export default async function EditListingPage({
     apply_link: opp.apply_link,
     deadline: opp.deadline,
     tags: opp.tags,
+    attachments_json: opp.attachments_json,
     confidence_score: 1,
   };
 

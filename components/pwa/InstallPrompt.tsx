@@ -32,7 +32,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2">
       {isOpen && (
         <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl w-56 mb-2 border border-border">
-          <p className="font-bold mb-1">Install CampusHub</p>
+          <p className="font-bold mb-1">Install Campus Opportunity Hub</p>
           <p className="text-sm opacity-90 mb-4">Add to home screen for faster access and native app feel</p>
           <button
             onClick={() => { promptEvent.prompt(); setIsOpen(false); }}

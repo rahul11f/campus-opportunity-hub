@@ -10,6 +10,7 @@ import type {
 } from '@/types/opportunity';
 import { AdvancedSlotsAccordion } from './AdvancedSlotsAccordion';
 import { OpportunityCard } from '@/components/opportunity/OpportunityCard';
+import { AttachmentUploader } from './AttachmentUploader';
 
 type Props = {
   initialData?: Partial<ExtractedOpportunity> | null;
@@ -182,6 +183,7 @@ export function OpportunityForm({
       rounds: initialData?.interview_process?.rounds || null,
       description: initialDescription,
     },
+    attachments_json: initialData?.attachments_json || [],
     raw_text: rawText || (initialData ? JSON.stringify(initialData, null, 2) : ''),
   });
 
@@ -474,6 +476,20 @@ export function OpportunityForm({
             Publish
           </button>
         </div>
+
+        {existingId ? (
+          <AttachmentUploader
+            opportunityId={existingId}
+            attachments={form.attachments_json || []}
+            onAttachmentsChange={(attachments) =>
+              setForm({ ...form, attachments_json: attachments })
+            }
+          />
+        ) : (
+          <div className="p-4 rounded-2xl border border-dashed border-border text-center text-xs text-muted-foreground">
+            Save draft or publish to enable uploading PDF or Excel attachments.
+          </div>
+        )}
 
         <AdvancedSlotsAccordion form={form} setForm={setForm} />
 

@@ -454,31 +454,173 @@ function AdditionalInfoSection({
 }
 
 function getOpportunityFields(opp: any) {
-  return {
-    company: opp.company || opp.basic_information?.company_name || '',
-    role: opp.role || opp.job_details?.job_role || '',
-    type: opp.type || opp.basic_information?.opportunity_type || 'placement',
-    salary: opp.salary || opp.job_details?.salary_ctc || '',
-    location: opp.location || opp.job_details?.location || '',
-    apply_link: opp.apply_link || opp.basic_information?.jd_link || opp.attachments?.jd_link || '',
-    source_link: opp.source_link || '',
-    instructions: opp.instructions || opp.communication?.additional_instructions || '',
-    deadline: opp.deadline || opp.basic_information?.application_deadline || '',
-    cgpa: opp.eligibility?.cgpa || opp.eligibility?.minimum_cgpa_percentage || '',
-    backlog: opp.eligibility?.backlog || opp.eligibility?.active_backlogs_allowed || '',
-    batch: opp.eligibility?.batch || opp.eligibility?.passing_batch || '',
-    branches: Array.isArray(opp.eligibility?.branches) 
-      ? opp.eligibility.branches.join(', ')
-      : opp.eligibility?.branches || opp.eligibility?.eligible_branches || '',
-  };
+  const fields: Record<string, string> = {};
+
+  // Basic info
+  fields.company = opp.company || opp.basic_information?.company_name || '';
+  fields.role = opp.role || opp.job_details?.job_role || '';
+  fields.type = opp.type || opp.basic_information?.opportunity_type || 'placement';
+  fields.salary = opp.salary || opp.job_details?.salary_ctc || '';
+  fields.location = opp.location || opp.job_details?.location || '';
+  fields.apply_link = opp.apply_link || opp.basic_information?.jd_link || opp.attachments?.jd_link || '';
+  fields.source_link = opp.source_link || '';
+  fields.instructions = opp.instructions || opp.communication?.additional_instructions || '';
+  fields.deadline = opp.deadline || opp.basic_information?.application_deadline || '';
+
+  // Eligibility
+  fields.cgpa = opp.eligibility?.cgpa || opp.eligibility?.minimum_cgpa_percentage || '';
+  fields.backlog = opp.eligibility?.backlog || opp.eligibility?.active_backlogs_allowed || '';
+  fields.batch = opp.eligibility?.batch || opp.eligibility?.passing_batch || '';
+  fields.branches = Array.isArray(opp.eligibility?.branches)
+    ? opp.eligibility.branches.join(', ')
+    : opp.eligibility?.branches || opp.eligibility?.eligible_branches || '';
+  fields.educational_qualification = opp.eligibility?.educational_qualification || opp.eligibility?.education_qualification || '';
+  fields.eligible_streams = opp.eligibility?.eligible_streams || '';
+  fields.cutoff_criteria = opp.eligibility?.cutoff_criteria || '';
+  fields.gender_eligibility = opp.eligibility?.gender_eligibility || '';
+
+  // Job details
+  fields.stipend = opp.job_details?.stipend || opp.eligibility?.stipend || '';
+  fields.work_mode = opp.job_details?.work_mode || opp.eligibility?.work_mode || '';
+  fields.employment_type = opp.job_details?.employment_type || opp.eligibility?.employment_type || '';
+
+  // Recruitment process
+  fields.hiring_process = opp.recruitment_process?.hiring_process || opp.eligibility?.hiring_process || '';
+  fields.number_of_rounds = opp.recruitment_process?.number_of_rounds || opp.eligibility?.number_of_rounds || '';
+  fields.elimination_rounds = opp.recruitment_process?.elimination_rounds || opp.eligibility?.elimination_rounds || '';
+
+  // Schedule
+  fields.event_date = opp.schedule?.event_date || opp.eligibility?.event_date || '';
+  fields.time = opp.schedule?.time || opp.eligibility?.time || '';
+  fields.venue = opp.schedule?.venue || opp.eligibility?.venue || '';
+  fields.mode = opp.schedule?.mode || opp.eligibility?.mode || '';
+
+  // Communication
+  fields.communication_channel = opp.communication?.communication_channel || opp.eligibility?.communication_channel || '';
+  fields.check_inbox = opp.communication?.check_inbox || opp.eligibility?.check_inbox || '';
+  fields.check_spam_folder = opp.communication?.check_spam_folder || opp.eligibility?.check_spam_folder || '';
+  fields.timing_shared_by = opp.communication?.timing_shared_by || opp.eligibility?.timing_shared_by || '';
+
+  // Attachments
+  fields.student_eligible_list = opp.attachments?.student_eligible_list || opp.eligibility?.student_eligible_list || '';
+  fields.additional_documents = opp.attachments?.additional_documents || opp.eligibility?.additional_documents || '';
+
+  // Source metadata
+  fields.issued_by = opp.source_metadata?.issued_by || opp.eligibility?.issued_by || '';
+  fields.institution = opp.source_metadata?.institution || opp.eligibility?.institution || '';
+  fields.reminder_notice = opp.source_metadata?.reminder_notice || opp.eligibility?.reminder_notice || '';
+  fields.notice_type = opp.source_metadata?.notice_type || opp.eligibility?.notice_type || '';
+
+  // Company logo
+  fields.company_logo = opp.basic_information?.company_logo || opp.eligibility?.company_logo || '';
+  fields.round_name = opp.basic_information?.round_name || opp.eligibility?.round_name || '';
+
+  return fields;
 }
 
-function updateOpportunityFields(opp: any, fields: any) {
+// Group field definitions for the edit form sections
+const EDIT_SECTIONS: { key: string; label: string; fields: { key: string; label: string; type?: string }[] }[] = [
+  {
+    key: 'basic',
+    label: 'Basic Information',
+    fields: [
+      { key: 'company', label: 'Company Name' },
+      { key: 'role', label: 'Job Role' },
+      { key: 'type', label: 'Opportunity Type' },
+      { key: 'salary', label: 'Salary / CTC' },
+      { key: 'location', label: 'Location' },
+      { key: 'deadline', label: 'Application Deadline', type: 'datetime-local' },
+      { key: 'apply_link', label: 'Apply / JD Link' },
+      { key: 'source_link', label: 'Source Link' },
+      { key: 'company_logo', label: 'Company Logo URL' },
+      { key: 'round_name', label: 'Round Name' },
+    ],
+  },
+  {
+    key: 'eligibility',
+    label: 'Eligibility Criteria',
+    fields: [
+      { key: 'cgpa', label: 'Minimum CGPA / Percentage' },
+      { key: 'backlog', label: 'Backlogs Allowed' },
+      { key: 'batch', label: 'Eligible Batch / Passing Year' },
+      { key: 'branches', label: 'Eligible Branches (comma separated)' },
+      { key: 'educational_qualification', label: 'Educational Qualification' },
+      { key: 'eligible_streams', label: 'Eligible Streams' },
+      { key: 'cutoff_criteria', label: 'Cutoff Criteria' },
+      { key: 'gender_eligibility', label: 'Gender Eligibility' },
+    ],
+  },
+  {
+    key: 'job_details',
+    label: 'Job Details',
+    fields: [
+      { key: 'stipend', label: 'Stipend' },
+      { key: 'work_mode', label: 'Work Mode' },
+      { key: 'employment_type', label: 'Employment Type' },
+    ],
+  },
+  {
+    key: 'recruitment',
+    label: 'Recruitment Process',
+    fields: [
+      { key: 'hiring_process', label: 'Hiring Process' },
+      { key: 'number_of_rounds', label: 'Number of Rounds' },
+      { key: 'elimination_rounds', label: 'Elimination Rounds' },
+    ],
+  },
+  {
+    key: 'schedule',
+    label: 'Schedule & Timing',
+    fields: [
+      { key: 'event_date', label: 'Event Date' },
+      { key: 'time', label: 'Time' },
+      { key: 'venue', label: 'Venue' },
+      { key: 'mode', label: 'Mode (Online/Offline)' },
+    ],
+  },
+  {
+    key: 'communication',
+    label: 'Communication',
+    fields: [
+      { key: 'communication_channel', label: 'Communication Channel' },
+      { key: 'check_inbox', label: 'Check Inbox' },
+      { key: 'check_spam_folder', label: 'Check Spam Folder' },
+      { key: 'timing_shared_by', label: 'Timing Shared By' },
+    ],
+  },
+  {
+    key: 'attachments_links',
+    label: 'Attachments & Resources',
+    fields: [
+      { key: 'student_eligible_list', label: 'Student Eligible List URL' },
+      { key: 'additional_documents', label: 'Additional Documents URL' },
+    ],
+  },
+  {
+    key: 'source',
+    label: 'Source Metadata',
+    fields: [
+      { key: 'issued_by', label: 'Issued By' },
+      { key: 'institution', label: 'Institution' },
+      { key: 'reminder_notice', label: 'Reminder Notice' },
+      { key: 'notice_type', label: 'Notice Type' },
+    ],
+  },
+  {
+    key: 'content',
+    label: 'Notice Instructions',
+    fields: [
+      { key: 'instructions', label: 'Instructions / Notice Content', type: 'textarea' },
+    ],
+  },
+];
+
+function updateOpportunityFields(opp: any, fields: Record<string, string>) {
   const branchesArray = fields.branches
     ? fields.branches.split(',').map((s: string) => s.trim()).filter(Boolean)
     : [];
 
-  const isNested = !!(opp.basic_information || opp.job_details || opp.eligibility);
+  const isNested = !!(opp.basic_information || opp.job_details);
 
   if (isNested) {
     return {
@@ -489,12 +631,17 @@ function updateOpportunityFields(opp: any, fields: any) {
         opportunity_type: fields.type,
         application_deadline: fields.deadline,
         jd_link: fields.apply_link,
+        company_logo: fields.company_logo,
+        round_name: fields.round_name,
       },
       job_details: {
         ...opp.job_details,
         job_role: fields.role,
         salary_ctc: fields.salary,
         location: fields.location,
+        stipend: fields.stipend,
+        work_mode: fields.work_mode,
+        employment_type: fields.employment_type,
       },
       eligibility: {
         ...opp.eligibility,
@@ -503,6 +650,43 @@ function updateOpportunityFields(opp: any, fields: any) {
         passing_batch: fields.batch,
         eligible_branches: fields.branches,
         branches: branchesArray,
+        educational_qualification: fields.educational_qualification,
+        eligible_streams: fields.eligible_streams,
+        cutoff_criteria: fields.cutoff_criteria,
+        gender_eligibility: fields.gender_eligibility,
+      },
+      recruitment_process: {
+        ...opp.recruitment_process,
+        hiring_process: fields.hiring_process,
+        number_of_rounds: fields.number_of_rounds,
+        elimination_rounds: fields.elimination_rounds,
+      },
+      schedule: {
+        ...opp.schedule,
+        event_date: fields.event_date,
+        time: fields.time,
+        venue: fields.venue,
+        mode: fields.mode,
+      },
+      communication: {
+        ...opp.communication,
+        communication_channel: fields.communication_channel,
+        check_inbox: fields.check_inbox,
+        check_spam_folder: fields.check_spam_folder,
+        timing_shared_by: fields.timing_shared_by,
+        additional_instructions: fields.instructions,
+      },
+      attachments: {
+        ...opp.attachments,
+        student_eligible_list: fields.student_eligible_list,
+        additional_documents: fields.additional_documents,
+      },
+      source_metadata: {
+        ...opp.source_metadata,
+        issued_by: fields.issued_by,
+        institution: fields.institution,
+        reminder_notice: fields.reminder_notice,
+        notice_type: fields.notice_type,
       },
       instructions: fields.instructions,
       apply_link: fields.apply_link,
@@ -860,118 +1044,92 @@ export function SmartExtractionPreview({
               </div>
 
               {isEditingModalDetails && modalFormFields ? (
-                <div className="space-y-4 max-w-2xl text-left">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Company Name</label>
-                      <input 
-                        value={modalFormFields.company} 
-                        onChange={e => setModalFormFields({...modalFormFields, company: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Job Role</label>
-                      <input 
-                        value={modalFormFields.role} 
-                        onChange={e => setModalFormFields({...modalFormFields, role: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Opportunity Type</label>
-                      <select 
-                        value={modalFormFields.type} 
-                        onChange={e => setModalFormFields({...modalFormFields, type: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
-                      >
-                        <option value="placement">Placement</option>
-                        <option value="internship">Internship</option>
-                        <option value="hackathon">Hackathon</option>
-                        <option value="scholarship">Scholarship</option>
-                        <option value="campus_drive">Campus Drive</option>
-                        <option value="fellowship">Fellowship</option>
-                        <option value="competition">Competition</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Salary / CTC</label>
-                      <input 
-                        value={modalFormFields.salary} 
-                        onChange={e => setModalFormFields({...modalFormFields, salary: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Location</label>
-                      <input 
-                        value={modalFormFields.location} 
-                        onChange={e => setModalFormFields({...modalFormFields, location: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Application Deadline</label>
-                      <input 
-                        type="datetime-local"
-                        value={modalFormFields.deadline ? modalFormFields.deadline.substring(0,16) : ''} 
-                        onChange={e => setModalFormFields({...modalFormFields, deadline: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Minimum CGPA</label>
-                      <input 
-                        value={modalFormFields.cgpa} 
-                        onChange={e => setModalFormFields({...modalFormFields, cgpa: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Backlogs Allowed</label>
-                      <input 
-                        value={modalFormFields.backlog} 
-                        onChange={e => setModalFormFields({...modalFormFields, backlog: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Eligible Batch</label>
-                      <input 
-                        value={modalFormFields.batch} 
-                        onChange={e => setModalFormFields({...modalFormFields, batch: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Apply Link</label>
-                      <input 
-                        value={modalFormFields.apply_link} 
-                        onChange={e => setModalFormFields({...modalFormFields, apply_link: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-xs text-muted-foreground block mb-1">Eligible Branches (Comma separated)</label>
-                      <input 
-                        value={modalFormFields.branches} 
-                        onChange={e => setModalFormFields({...modalFormFields, branches: e.target.value})}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-xs text-muted-foreground block mb-1">Notice Instructions</label>
-                      <textarea 
-                        value={modalFormFields.instructions} 
-                        onChange={e => setModalFormFields({...modalFormFields, instructions: e.target.value})}
-                        rows={3}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary" 
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-4 max-w-3xl text-left max-h-[60vh] overflow-y-auto pr-2">
+                  {EDIT_SECTIONS.map((section) => {
+                    // Only show sections that have at least one field with a value, or all sections in edit mode
+                    const hasData = section.fields.some(f => modalFormFields[f.key]?.trim());
+                    
+                    return (
+                      <div key={section.key} className={`rounded-xl border ${hasData ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/10'} overflow-hidden`}>
+                        <div className="px-4 py-2.5 border-b border-border/50">
+                          <span className="text-xs font-bold text-foreground uppercase tracking-wide">{section.label}</span>
+                          {!hasData && <span className="text-[10px] text-muted-foreground ml-2">(empty)</span>}
+                        </div>
+                        <div className="px-4 py-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {section.fields.map((field) => {
+                              // Special handling for type dropdown
+                              if (field.key === 'type') {
+                                return (
+                                  <div key={field.key}>
+                                    <label className="text-xs text-muted-foreground block mb-1">{field.label}</label>
+                                    <select
+                                      value={modalFormFields[field.key] || ''}
+                                      onChange={e => setModalFormFields({...modalFormFields, [field.key]: e.target.value})}
+                                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
+                                    >
+                                      <option value="placement">Placement</option>
+                                      <option value="internship">Internship</option>
+                                      <option value="hackathon">Hackathon</option>
+                                      <option value="scholarship">Scholarship</option>
+                                      <option value="campus_drive">Campus Drive</option>
+                                      <option value="fellowship">Fellowship</option>
+                                      <option value="competition">Competition</option>
+                                      <option value="other">Other</option>
+                                    </select>
+                                  </div>
+                                );
+                              }
+
+                              // Textarea fields
+                              if (field.type === 'textarea') {
+                                return (
+                                  <div key={field.key} className="md:col-span-2">
+                                    <label className="text-xs text-muted-foreground block mb-1">{field.label}</label>
+                                    <textarea
+                                      value={modalFormFields[field.key] || ''}
+                                      onChange={e => setModalFormFields({...modalFormFields, [field.key]: e.target.value})}
+                                      rows={4}
+                                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
+                                    />
+                                  </div>
+                                );
+                              }
+
+                              // Datetime fields
+                              if (field.type === 'datetime-local') {
+                                return (
+                                  <div key={field.key}>
+                                    <label className="text-xs text-muted-foreground block mb-1">{field.label}</label>
+                                    <input
+                                      type="datetime-local"
+                                      value={modalFormFields[field.key] ? modalFormFields[field.key].substring(0, 16) : ''}
+                                      onChange={e => setModalFormFields({...modalFormFields, [field.key]: e.target.value})}
+                                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
+                                    />
+                                  </div>
+                                );
+                              }
+
+                              // Default text input
+                              return (
+                                <div key={field.key}>
+                                  <label className="text-xs text-muted-foreground block mb-1">{field.label}</label>
+                                  <input
+                                    value={modalFormFields[field.key] || ''}
+                                    onChange={e => setModalFormFields({...modalFormFields, [field.key]: e.target.value})}
+                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:border-primary"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                   
-                  <div className="flex gap-2 justify-end pt-4">
+                  <div className="flex gap-2 justify-end pt-4 sticky bottom-0 bg-white dark:bg-slate-900 pb-2">
                     <button
                       type="button"
                       onClick={() => setIsEditingModalDetails(false)}

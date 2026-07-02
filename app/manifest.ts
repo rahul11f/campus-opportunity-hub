@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Campus Opportunity Hub',
-    short_name: 'CampusHub',
+    short_name: 'Campus Hub',
     description:
       'Placements, internships, scholarships and campus opportunities',
     start_url: '/',

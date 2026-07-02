@@ -115,6 +115,15 @@ export const RootExtractedOpportunitySchema = z.union([
   }),
 ]);
 
+export const AttachmentItemSchema = z.object({
+  url: z.string(),
+  public_id: z.string(),
+  file_type: z.enum(['pdf', 'eligibility_list', 'document', 'image', 'other']),
+  file_name: z.string(),
+  file_size: z.number().optional(),
+  uploaded_at: z.string(),
+});
+
 export const OpportunityCreateSchema = z.object({
   company: z.string().min(1, 'Company name is required').max(200),
   role: z.string().min(1, 'Role is required').max(300),
@@ -133,6 +142,7 @@ export const OpportunityCreateSchema = z.object({
   featured: z.boolean().default(false),
   is_published: z.boolean().default(false),
   tags: z.array(z.string()).nullable().optional(),
+  attachments_json: z.array(AttachmentItemSchema).nullable().optional(),
   contribution_id: z.string().uuid().nullable().optional(),
 });
 

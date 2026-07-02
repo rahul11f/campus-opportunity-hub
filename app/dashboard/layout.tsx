@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { SiteLogo } from '@/components/ui/SiteLogo';
 import {
   LayoutDashboard,
   Bookmark,
@@ -52,11 +53,9 @@ function SidebarContent({
       {/* Logo */}
       <div className="p-4 border-b border-border">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <GraduationCap className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <SiteLogo size="sm" />
           <div>
-            <p className="text-sm font-bold leading-tight">Campus Hub</p>
+            <p className="text-sm font-bold leading-tight">Campus Opportunity Hub</p>
             <p className="text-xs text-muted-foreground">Student Portal</p>
           </div>
         </Link>

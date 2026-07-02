@@ -20,7 +20,7 @@ export function MobileNav() {
   }
 
   return (
-    <div className="md:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pb-safe pointer-events-none">
+    <div className="md:hidden fixed left-0 right-0 z-50 flex justify-center px-4 pointer-events-none" style={{ bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
       <nav className="flex justify-around items-center h-16 w-full max-w-[320px] bg-background/80 dark:bg-black/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-full shadow-2xl pointer-events-auto overflow-hidden">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));

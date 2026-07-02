@@ -33,12 +33,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'CampusHub',
+    title: 'Campus Opportunity Hub',
   },
 };
 
 import { CommandMenu } from '@/components/shared/CommandMenu';
 import { AuthHashRedirector } from '@/components/auth/AuthHashRedirector';
+import { GlobalLoader } from '@/components/shared/GlobalLoader';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body>
         <ThemeProvider
@@ -55,10 +57,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange={false}
         >
-          <div className="flex flex-col min-h-screen pb-16 md:pb-0">
+          <div className="flex flex-col min-h-screen pb-28 md:pb-0 mobile-content-safe">
             {children}
             <MobileNav />
           </div>
+          <GlobalLoader />
           <CommandMenu />
           <Toaster position="bottom-right" richColors />
           <InstallPrompt />

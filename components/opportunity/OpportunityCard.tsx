@@ -8,7 +8,18 @@ import {
   Building2,
   Clock,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  Calendar,
+  FileText,
+  Paperclip,
+  Zap,
+  Monitor,
+  BookOpen,
+  Globe,
+  Link as LinkIcon,
+  ShieldCheck,
+  CheckSquare,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -35,7 +46,7 @@ function CountdownTimer({ deadline }: { deadline: string | null }) {
     setTimeLeft(calculateTimeLeft());
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
-    }, 60000); // Update every minute
+    }, 60000);
 
     return () => clearInterval(timer);
   }, [deadline]);
@@ -44,7 +55,7 @@ function CountdownTimer({ deadline }: { deadline: string | null }) {
     return <span className="text-emerald-600 dark:text-emerald-400 font-medium">Open Always</span>;
   }
 
-  if (!timeLeft) return null; // initial render
+  if (!timeLeft) return null;
 
   if (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0) {
     return <span className="text-red-500 font-medium">Expired</span>;
@@ -68,119 +79,287 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
     ? Math.ceil((new Date(opportunity.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) < 0
     : false;
 
+  // Resolve eligibility data
+  const el = opportunity.eligibility || {};
+
+  // Resolve Bond Detail
+  let bondVal = el.bond_details || el.bond || null;
+  if (!bondVal && opportunity.additional_extracted_info) {
+    const bondItem = opportunity.additional_extracted_info.find((item: any) =>
+      item.label.toLowerCase().includes('bond')
+    );
+    if (bondItem) bondVal = bondItem.value;
+  }
+
+  // Resolve About Company
+  let aboutVal = opportunity.about_company || null;
+  if (!aboutVal && opportunity.additional_extracted_info) {
+    const aboutItem = opportunity.additional_extracted_info.find((item: any) =>
+      item.label.toLowerCase().includes('about')
+    );
+    if (aboutItem) aboutVal = aboutItem.value;
+  }
+
+  // Gather values with fallbacks
+  const fields = {
+    company: opportunity.company || 'Not Declared',
+    aboutCompany: aboutVal || 'Not Specified',
+    website: opportunity.company_website || 'Not Specified',
+    course: opportunity.education_qualification || el.educational_qualification || 'Not Specified',
+    branch: Array.isArray(el.branches) ? el.branches.join(', ') : el.branches || el.eligible_branches || 'Not Specified',
+    cutoff: el.cgpa || el.cutoff_criteria || el.minimum_cgpa_percentage || 'Not Specified',
+    regLink: opportunity.apply_link || opportunity.registration_link || 'Not Specified',
+    lastDate: opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not Declared',
+    batch: el.batch || el.passing_batch || 'Not Specified',
+    salary: opportunity.salary || el.salary_ctc || 'Not Declared',
+    role: opportunity.role || el.job_role || 'Not Declared',
+    responsibilities: Array.isArray(opportunity.responsibilities) ? opportunity.responsibilities.join(' • ') : opportunity.responsibilities || 'Not Specified',
+    selectionProcess: Array.isArray(opportunity.interview_process?.description) ? opportunity.interview_process.description.join(' → ') : el.hiring_process || 'Not Specified',
+    interviewLocation: opportunity.venue || el.venue || 'Not Specified',
+    campusDate: el.event_date || 'Not Specified',
+    joiningDate: opportunity.joining_date || 'Not Specified',
+    gender: opportunity.gender_eligibility || el.gender_eligibility || 'Not Specified',
+    joiningLocation: opportunity.location || el.location || 'Not Specified',
+    bond: bondVal || 'Not Specified',
+    segment: opportunity.type || 'Not Specified',
+    terms: opportunity.instructions || 'Not Specified',
+    skills: Array.isArray(opportunity.skills) ? opportunity.skills.join(', ') : opportunity.skills || 'Not Specified',
+  };
+
+  const attachments = opportunity.attachments_json || [];
+  const pdfAttachments = attachments.filter((a: any) => a.file_type === 'pdf');
+  const excelAttachments = attachments.filter((a: any) => a.file_type === 'eligibility_list');
+  const otherAttachments = attachments.filter((a: any) => a.file_type !== 'pdf' && a.file_type !== 'eligibility_list');
+
   return (
     <div className={`group relative rounded-3xl border border-slate-200 dark:border-border bg-white dark:bg-card overflow-hidden hover:shadow-xl hover:border-primary/20 dark:hover:border-primary/20 transition-all flex flex-col h-full ${isExpired ? 'opacity-75' : ''}`}>
       
-      {/* Badge / Logo header */}
-      <div className="p-6 pb-4 flex items-start justify-between gap-4">
-        <div className="w-12 h-12 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
-          {opportunity.company_logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={opportunity.company_logo}
-              alt={opportunity.company}
-              className="w-8 h-8 object-contain"
-            />
-          ) : (
-            <Building2 className="w-6 h-6 text-slate-400" />
+      {/* 1. Header Section */}
+      <div className="p-6 pb-4 border-b border-slate-100 dark:border-border bg-slate-50/50 dark:bg-muted/10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="w-12 h-12 rounded-2xl border border-slate-100 dark:border-border bg-slate-100 dark:bg-muted flex items-center justify-center overflow-hidden shrink-0">
+            {opportunity.company_logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={opportunity.company_logo} alt={fields.company} className="w-8 h-8 object-contain" />
+            ) : (
+              <Building2 className="w-6 h-6 text-slate-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1">
+              {fields.role}
+            </h3>
+            <p className="text-sm font-semibold text-primary mt-0.5">{fields.company}</p>
+          </div>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            {fields.segment}
+          </span>
+        </div>
+      </div>
+
+      {/* 2. Structured Information Blocks */}
+      <div className="p-6 space-y-5 flex-1">
+        
+        {/* About Company */}
+        <div className="space-y-1">
+          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5" /> About & Website
+          </h4>
+          <p className="text-xs text-slate-600 dark:text-foreground/90 line-clamp-2 leading-relaxed">
+            {fields.aboutCompany}
+          </p>
+          {fields.website !== 'Not Specified' && (
+            <a href={fields.website} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1 break-all font-medium">
+              <LinkIcon className="w-3 h-3 shrink-0" />
+              {fields.website}
+            </a>
           )}
         </div>
-        <div className="min-w-0 flex-1">
+
+        {/* Job Details Grid */}
+        <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-border pt-4">
+          <InfoRow label="Salary / CTC" value={fields.salary} icon={<IndianRupee className="w-3.5 h-3.5" />} />
+          <InfoRow label="Location" value={fields.joiningLocation} icon={<MapPin className="w-3.5 h-3.5" />} />
+          <InfoRow label="Joining Date" value={fields.joiningDate} icon={<Calendar className="w-3.5 h-3.5" />} />
+          <InfoRow label="Bond Details" value={fields.bond} icon={<FileText className="w-3.5 h-3.5" />} />
+        </div>
+
+        {/* Eligibility Criteria Section */}
+        <div className="space-y-2.5 border-t border-slate-100 dark:border-border pt-4">
+          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <GraduationCap className="w-3.5 h-3.5" /> Eligibility Criteria
+          </h4>
+          <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-muted/20 p-3.5 rounded-2xl border border-slate-100 dark:border-border/30">
+            <InfoGridCell label="Course" value={fields.course} />
+            <InfoGridCell label="Batch" value={fields.batch} />
+            <InfoGridCell label="Cut Off" value={fields.cutoff} />
+            <InfoGridCell label="Gender Preference" value={fields.gender} />
+            <div className="col-span-2">
+              <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Eligible Branches</p>
+              <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.branch}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Job Description & Requirements */}
+        <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
+          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5" /> Skills & Responsibilities
+          </h4>
+          <div>
+            <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Required Skills</p>
+            <p className="text-xs font-medium text-slate-700 dark:text-foreground/90 line-clamp-1">{fields.skills}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Key Responsibilities</p>
+            <p className="text-xs text-slate-600 dark:text-foreground/80 line-clamp-2 leading-relaxed">{fields.responsibilities}</p>
+          </div>
+        </div>
+
+        {/* Recruitment & Selection */}
+        <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
+          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <CheckSquare className="w-3.5 h-3.5" /> Selection & Timeline
+          </h4>
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mr-1.5">Selection:</span>
+              <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.selectionProcess}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Date</span>
+                <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.campusDate}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider block mb-0.5">Interview Location</span>
+                <span className="font-semibold text-slate-700 dark:text-foreground/90">{fields.interviewLocation}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* File Attachments */}
+        {(pdfAttachments.length > 0 || excelAttachments.length > 0 || otherAttachments.length > 0) && (
+          <div className="space-y-2 border-t border-slate-100 dark:border-border pt-4">
+            <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Paperclip className="w-3.5 h-3.5" /> Attached Files
+            </h4>
+            <div className="flex flex-col gap-1.5">
+              {pdfAttachments.map((att: any, i: number) => (
+                <AttachmentBadge key={i} url={att.url} name={att.file_name} icon="📄" label="Notice PDF" />
+              ))}
+              {excelAttachments.map((att: any, i: number) => (
+                <AttachmentBadge key={i} url={att.url} name={att.file_name} icon="📊" label="Eligibility List" />
+              ))}
+              {otherAttachments.map((att: any, i: number) => (
+                <AttachmentBadge key={i} url={att.url} name={att.file_name} icon="📎" label="Resource File" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Terms & Instructions */}
+        <div className="space-y-1 border-t border-slate-100 dark:border-border pt-4">
+          <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-muted-foreground uppercase tracking-widest">
+            Terms & Conditions / Guidelines
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+            {fields.terms}
+          </p>
+        </div>
+
+      </div>
+
+      {/* 3. Footer Section */}
+      <div className="px-6 py-4 bg-slate-50 dark:bg-muted/50 border-t border-slate-100 dark:border-border flex items-center justify-between text-sm mt-auto">
+        <CountdownTimer deadline={opportunity.deadline} />
+        
+        <div className="flex items-center gap-3">
+          {fields.regLink !== 'Not Specified' && (
+            <a
+              href={fields.regLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-blue-600 hover:text-blue-500 transition-colors flex items-center gap-1"
+            >
+              Apply Link
+              <LinkIcon className="w-3 h-3" />
+            </a>
+          )}
+
           {onViewDetails ? (
             <button
               type="button"
               onClick={onViewDetails}
-              className="text-left text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors block w-full"
+              className="flex items-center gap-1 font-bold text-primary hover:text-primary/80 transition-all group/btn"
             >
-              {opportunity.role}
+              View Full
+              <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
             </button>
           ) : String(opportunity.id).startsWith('preview') ? (
-            <span className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1">
-              {opportunity.role}
+            <span className="flex items-center gap-1 font-semibold text-slate-300 cursor-not-allowed">
+              View Full
+              <ArrowRight className="w-3.5 h-3.5" />
             </span>
           ) : (
             <Link
               href={`/opportunities/${opportunity.id}`}
-              className="text-lg font-bold text-slate-900 dark:text-foreground line-clamp-1 group-hover:text-primary transition-colors"
+              className="flex items-center gap-1 font-bold text-primary hover:text-primary/80 transition-all group/btn"
             >
-              {opportunity.role}
+              View Full
+              <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
             </Link>
           )}
-          <div className="text-sm font-medium text-slate-500 dark:text-muted-foreground mt-0.5">
-            {opportunity.company}
-          </div>
         </div>
-      </div>
-
-      {/* Tags section */}
-      <div className="px-6 pb-6 flex flex-wrap gap-2 flex-1">
-        <Chip icon={<Briefcase className="w-3.5 h-3.5" />}>
-          {opportunity.type || 'Role'}
-        </Chip>
-        <Chip icon={<MapPin className="w-3.5 h-3.5" />}>
-          {opportunity.location || 'Remote'}
-        </Chip>
-        {opportunity.salary && (
-          <Chip icon={<IndianRupee className="w-3.5 h-3.5" />}>
-            {opportunity.salary}
-          </Chip>
-        )}
-        {opportunity.eligibility?.cgpa && (
-          <Chip icon={<GraduationCap className="w-3.5 h-3.5" />}>
-            {opportunity.eligibility.cgpa} CGPA+
-          </Chip>
-        )}
-      </div>
-
-      {/* Footer section */}
-      <div className="px-6 py-4 bg-slate-50 dark:bg-muted/50 border-t border-slate-100 dark:border-border flex items-center justify-between text-sm">
-        <CountdownTimer deadline={opportunity.deadline} />
-        
-        {onViewDetails ? (
-          <button
-            type="button"
-            onClick={onViewDetails}
-            className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
-          >
-            View Details
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-        ) : String(opportunity.id).startsWith('preview') ? (
-          <span className="flex items-center gap-1.5 font-semibold text-slate-400 cursor-not-allowed">
-            View Details
-            <ArrowRight className="w-4 h-4" />
-          </span>
-        ) : (
-          <Link
-            href={`/opportunities/${opportunity.id}`}
-            className="flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80 transition-colors"
-          >
-            View Details
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        )}
       </div>
     </div>
   );
 }
 
-function Chip({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function InfoRow({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white dark:bg-background text-xs font-semibold text-slate-600 dark:text-muted-foreground border border-slate-200 dark:border-border">
-      {icon}
-      {children}
-    </span>
+    <div className="flex items-start gap-2.5">
+      <div className="text-slate-400 dark:text-muted-foreground mt-0.5 shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider">{label}</p>
+        <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function InfoGridCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] text-slate-400 dark:text-muted-foreground font-bold uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-xs font-semibold text-slate-700 dark:text-foreground/90 truncate">{value}</p>
+    </div>
+  );
+}
+
+function AttachmentBadge({ url, name, icon, label }: { url: string; name: string; icon: string; label: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-between p-2 rounded-xl border border-slate-100 dark:border-border/30 bg-slate-50/50 dark:bg-muted/10 hover:bg-slate-50 dark:hover:bg-muted/20 hover:border-primary/20 transition-all text-xs"
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-sm shrink-0">{icon}</span>
+        <div className="min-w-0">
+          <p className="font-medium text-slate-700 dark:text-foreground/90 truncate">{name}</p>
+          <p className="text-[9px] text-slate-400 dark:text-muted-foreground uppercase tracking-wider">{label}</p>
+        </div>
+      </div>
+      <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+    </a>
   );
 }
 
 export function OpportunityCardSkeleton() {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white h-[240px] animate-pulse" />
+    <div className="rounded-xl border border-slate-200 bg-white h-[400px] animate-pulse" />
   );
 }

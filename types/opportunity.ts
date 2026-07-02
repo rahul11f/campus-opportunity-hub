@@ -43,6 +43,15 @@ export interface InterviewProcess {
   description: string[] | null;
 }
 
+export interface AttachmentItem {
+  url: string;
+  public_id: string;
+  file_type: 'pdf' | 'eligibility_list' | 'document' | 'image' | 'other';
+  file_name: string;
+  file_size?: number;
+  uploaded_at: string;
+}
+
 export interface Opportunity {
   id: string;
   company: string;
@@ -90,6 +99,8 @@ export interface Opportunity {
   streams_specialization: string | null;
 
   tags: string[] | null;
+
+  attachments_json: AttachmentItem[] | null;
 
   views_count: number;
 
@@ -187,6 +198,7 @@ export interface ExtractedOpportunity {
   tags: string[] | null;
   confidence_score: number;
   additional_extracted_info?: AdditionalInfoItem[];
+  attachments_json?: AttachmentItem[] | null;
 }
 
 export interface DetectedUrl {

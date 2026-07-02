@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 import { motion } from 'framer-motion';
+import { SiteLogo } from '@/components/ui/SiteLogo';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -49,14 +50,12 @@ export function Sidebar() {
       {/* Premium Logo */}
       <Link href="/" className="group flex items-center gap-3 px-2 py-4 mb-6 relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-purple-500/20 to-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
-        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary),0.5)] border border-white/20">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
+        <SiteLogo size="md" />
         <div className="relative">
-          <h1 className="text-xl font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            CampusHub
+          <h1 className="text-sm font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent leading-tight max-w-[150px]">
+            Campus Opportunity Hub
           </h1>
-          <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Premium Access</p>
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-0.5">Premium Access</p>
         </div>
       </Link>
 

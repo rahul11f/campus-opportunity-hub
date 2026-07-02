@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { SiteLogo } from '@/components/ui/SiteLogo';
 
 function isAdmin(email?: string | null) {
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL_WHITELIST || '')
@@ -51,11 +52,9 @@ function SidebarContent({ pendingCount, userEmail }: { pendingCount: number; use
       {/* Logo */}
       <div className="p-4 border-b border-slate-200">
         <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
+          <SiteLogo size="sm" />
           <div>
-            <span className="text-sm font-bold text-slate-900 block">Campus Hub</span>
+            <span className="text-sm font-bold text-slate-900 block leading-tight">Campus Opportunity Hub</span>
             <span className="text-xs text-slate-500">Admin Panel</span>
           </div>
         </Link>

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { createClient } from '@/lib/supabase/client';
+import { SiteLogo } from '@/components/ui/SiteLogo';
 import {
   GraduationCap,
   Search,
@@ -75,11 +76,8 @@ export function PublicNavbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-sm sm:text-base hidden sm:block">Campus Opportunity Hub</span>
-            <span className="font-bold text-sm block sm:hidden">CampusHub</span>
+            <SiteLogo size="sm" />
+            <span className="font-bold text-sm sm:text-base">Campus Opportunity Hub</span>
           </Link>
 
           {/* Desktop Nav */}

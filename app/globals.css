@@ -167,4 +167,26 @@
   }
 }
 
+/* ═══════════════════════════════════════════════
+   PWA Safe Area & Mobile Nav Spacing
+   ═══════════════════════════════════════════════ */
+:root {
+  --mobile-nav-height: 64px;
+  --mobile-nav-bottom: 24px;
+  --mobile-nav-total: calc(var(--mobile-nav-height) + var(--mobile-nav-bottom) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* Ensure PWA content never goes behind the bottom nav or home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Mobile bottom spacing to keep content above floating nav */
+@media (max-width: 767px) {
+  .mobile-content-safe {
+    padding-bottom: var(--mobile-nav-total, 120px);
+  }
+}
 

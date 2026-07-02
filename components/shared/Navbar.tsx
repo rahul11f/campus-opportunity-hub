@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { SiteLogo } from '@/components/ui/SiteLogo';
 
 type UserRole = 'guest' | 'student' | 'admin';
 
@@ -66,11 +67,9 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 lg:hidden">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-[0_0_10px_rgba(var(--primary),0.3)] border border-white/20">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          <SiteLogo size="sm" />
           <span className="font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            CampusHub
+            Campus Opportunity Hub
           </span>
         </Link>
 
