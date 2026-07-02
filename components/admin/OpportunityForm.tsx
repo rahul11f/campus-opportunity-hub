@@ -501,14 +501,10 @@ export function OpportunityForm({
             Student Opportunity Preview
           </h3>
           <OpportunityCard opportunity={{
+            ...form,
             id: 'preview',
-            company: form.company || 'Company Name',
-            role: form.role || 'Job Role',
-            type: form.type || 'placement',
-            salary: form.salary,
-            location: form.location,
-            deadline: form.deadline || null,
             eligibility: {
+              ...form.eligibility,
               cgpa: form.eligibility.cgpa || form.eligibility.minimum_cgpa_percentage || null,
               branches: form.eligibility.branches || (form.eligibility.eligible_branches ? [form.eligibility.eligible_branches] : []),
               batch: form.eligibility.batch || form.eligibility.passing_batch || null,

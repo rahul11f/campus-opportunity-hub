@@ -453,6 +453,42 @@ function AdditionalInfoSection({
   );
 }
 
+function createPreviewOpportunity(opp: any) {
+  if (!opp) return null;
+  
+  // Resolve eligibility structure
+  const el = opp.eligibility || {};
+  const branches = Array.isArray(el.branches)
+    ? el.branches
+    : el.eligible_branches
+    ? [el.eligible_branches]
+    : [];
+
+  return {
+    ...opp,
+    company: opp.company || opp.basic_information?.company_name || 'Company Name',
+    role: opp.role || opp.job_details?.job_role || 'Job Role',
+    type: opp.type || opp.basic_information?.opportunity_type || 'placement',
+    salary: opp.salary || opp.job_details?.salary_ctc || null,
+    location: opp.location || opp.job_details?.location || null,
+    deadline: opp.deadline || opp.basic_information?.application_deadline || null,
+    company_website: opp.company_website || opp.basic_information?.company_website || opp.website || null,
+    instructions: opp.instructions || opp.communication?.additional_instructions || opp.additional_instructions || null,
+    apply_link: opp.apply_link || opp.basic_information?.jd_link || opp.attachments?.jd_link || null,
+    source_link: opp.source_link || null,
+    company_logo: opp.company_logo || opp.basic_information?.company_logo || null,
+    skills: opp.skills || [],
+    responsibilities: opp.responsibilities || [],
+    eligibility: {
+      ...el,
+      cgpa: el.cgpa || el.minimum_cgpa_percentage || null,
+      branches: branches,
+      batch: el.batch || el.passing_batch || null,
+      backlog: el.backlog || el.active_backlogs_allowed || null,
+    }
+  };
+}
+
 function getOpportunityFields(opp: any) {
   const fields: Record<string, string> = {};
 
@@ -819,45 +855,17 @@ export function SmartExtractionPreview({
     }
   };
 
-  const mockOpportunity = {
-    id: 'preview',
-    company: (currentOppData as any)?.basic_information?.company_name || 'Company Name',
-    role: (currentOppData as any)?.job_details?.job_role || 'Job Role',
-    type: (currentOppData as any)?.basic_information?.opportunity_type || 'placement',
-    salary: (currentOppData as any)?.job_details?.salary_ctc || (currentOppData as any)?.salary || null,
-    location: (currentOppData as any)?.job_details?.location || (currentOppData as any)?.location || null,
-    deadline: (currentOppData as any)?.basic_information?.application_deadline || (currentOppData as any)?.deadline || null,
-    eligibility: {
-      cgpa: (currentOppData as any)?.eligibility?.minimum_cgpa_percentage || null,
-      branches: (currentOppData as any)?.eligibility?.eligible_branches ? [(currentOppData as any).eligibility.eligible_branches] : [],
-      batch: (currentOppData as any)?.eligibility?.passing_batch || null,
-      backlog: (currentOppData as any)?.eligibility?.active_backlogs_allowed || null,
-    },
-    company_logo: (currentOppData as any)?.basic_information?.company_logo || null,
-  };
+  const mockOpportunity = createPreviewOpportunity({
+    ...currentOppData,
+    id: 'preview'
+  });
 
   const activeModalOpp = detailsModalOppIdx === null ? null : detailsModalOppIdx === -99 ? data : opportunities[detailsModalOppIdx];
 
-  const modalMockOpp = activeModalOpp ? {
-    id: 'modal-preview',
-    company: activeModalOpp.company || (activeModalOpp as any).basic_information?.company_name || 'Company Name',
-    role: activeModalOpp.role || (activeModalOpp as any).job_details?.job_role || 'Job Role',
-    type: activeModalOpp.type || (activeModalOpp as any).basic_information?.opportunity_type || 'placement',
-    salary: activeModalOpp.salary || (activeModalOpp as any).job_details?.salary_ctc || null,
-    location: activeModalOpp.location || (activeModalOpp as any).job_details?.location || null,
-    deadline: activeModalOpp.deadline || (activeModalOpp as any).basic_information?.application_deadline || null,
-    eligibility: {
-      cgpa: (activeModalOpp as any).eligibility?.minimum_cgpa_percentage || (activeModalOpp as any).eligibility?.cgpa || null,
-      branches: (activeModalOpp as any).eligibility?.eligible_branches 
-        ? [(activeModalOpp as any).eligibility.eligible_branches] 
-        : Array.isArray((activeModalOpp as any).eligibility?.branches)
-        ? (activeModalOpp as any).eligibility.branches
-        : [],
-      batch: (activeModalOpp as any).eligibility?.passing_batch || (activeModalOpp as any).eligibility?.batch || null,
-      backlog: (activeModalOpp as any).eligibility?.active_backlogs_allowed || (activeModalOpp as any).eligibility?.backlog || null,
-    },
-    company_logo: (activeModalOpp as any).basic_information?.company_logo || null,
-  } : null;
+  const modalMockOpp = activeModalOpp ? createPreviewOpportunity({
+    ...activeModalOpp,
+    id: 'modal-preview'
+  }) : null;
 
   return (
     <div className="space-y-4">
@@ -942,22 +950,10 @@ export function SmartExtractionPreview({
           <div className="flex flex-col gap-4">
             {hasMultiple ? (
               opportunities.map((opp, idx) => {
-                const mockOpp = {
-                  id: `preview-${idx}`,
-                  company: (opp as any).basic_information?.company_name || `Company ${idx + 1}`,
-                  role: (opp as any).job_details?.job_role || 'Job Role',
-                  type: (opp as any).basic_information?.opportunity_type || 'placement',
-                  salary: (opp as any).job_details?.salary_ctc || (opp as any).salary || null,
-                  location: (opp as any).job_details?.location || (opp as any).location || null,
-                  deadline: (opp as any).basic_information?.application_deadline || (opp as any).deadline || null,
-                  eligibility: {
-                    cgpa: (opp as any).eligibility?.minimum_cgpa_percentage || null,
-                    branches: (opp as any).eligibility?.eligible_branches ? [(opp as any).eligibility.eligible_branches] : [],
-                    batch: (opp as any).eligibility?.passing_batch || null,
-                    backlog: (opp as any).eligibility?.active_backlogs_allowed || null,
-                  },
-                  company_logo: (opp as any).basic_information?.company_logo || null,
-                };
+                const mockOpp = createPreviewOpportunity({
+                  ...opp,
+                  id: `preview-${idx}`
+                }) as any;
                 return (
                   <div key={idx} className="border border-slate-200 dark:border-border rounded-3xl p-6 bg-slate-50 dark:bg-muted/10">
                     <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
