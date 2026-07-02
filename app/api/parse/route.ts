@@ -115,7 +115,7 @@ async function localParsePdfBuffer(nodeBuffer: Buffer): Promise<string> {
     if (process.env.GEMINI_API_KEY) {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const pdfPart = {
         inlineData: {
           data: nodeBuffer.toString('base64'),
@@ -281,7 +281,8 @@ Do not format as markdown. Just output the raw text.`;
       let lastError: any = null;
       let rawText = '';
 
-      for (const modelName of modelsToTry) {
+      const imageModelsToTry = ['gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-pro'];
+      for (const modelName of imageModelsToTry) {
         try {
           const model = genAI.getGenerativeModel({ model: modelName });
           const result = await model.generateContent([promptText, imagePart]);
@@ -360,14 +361,18 @@ Do not format as markdown. Just output the raw text.`;
       console.log('Found URLs to crawl and merge:', uniqueUrls);
       let accumulatedScrapedText = '';
 
+      let failedLinksWarning = '';
+
       for (const url of uniqueUrls) {
         const scraped = await fetchAndScrapeLink(url);
         if (scraped) {
           accumulatedScrapedText += `\n\n--- CONTENT FROM LINK ${url} ---\n${scraped}`;
+        } else {
+          failedLinksWarning += `Warning: Failed to fetch data from ${url}. If this was extracted from an image, the URL might have OCR typos.\n`;
         }
       }
 
-      if (accumulatedScrapedText.trim().length > 0) {
+      if (accumulatedScrapedText.trim().length > 0 || failedLinksWarning.length > 0) {
         console.log('Running Gemini refinement pass with crawled content...');
         const refinementPrompt = `
 You are refining the parsed recruitment data.
@@ -378,6 +383,7 @@ ${JSON.stringify(initialJson, null, 2)}
 
 Crawled Link Content:
 ${accumulatedScrapedText}
+${failedLinksWarning}
 
 Your task is to merge these two sources:
 1. The initial JSON contains an array of "opportunities". For each opportunity, correct any null or empty values using the rich details in the crawled link content if the link content refers to that specific company/role.
