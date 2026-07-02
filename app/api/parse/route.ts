@@ -234,7 +234,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Gemini API key is not configured.' }, { status: 500 });
     }
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro-latest'];
     let initialJson: any = null;
     let inputContext = '';
 
@@ -281,7 +281,7 @@ Do not format as markdown. Just output the raw text.`;
       let lastError: any = null;
       let rawText = '';
 
-      const imageModelsToTry = ['gemini-2.0-flash', 'gemini-3.5-flash', 'gemini-pro'];
+      const imageModelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro-latest'];
       for (const modelName of imageModelsToTry) {
         try {
           const model = genAI.getGenerativeModel({ model: modelName });
