@@ -250,16 +250,9 @@ export async function POST(req: Request) {
       };
 
       const promptText = `
-Analyze this screenshot/image with maximum precision.
-
-1. Perform high-accuracy OCR to extract EVERY SINGLE piece of text visible in this image — every word, number, date, URL, phone number, email, bullet point, header, footer, watermark, and fine print. Nothing should be omitted.
-2. If there are multiple companies or roles listed in the image, separate them and output them as separate objects in the "opportunities" array.
-3. If there are any short URLs (like tinyurl, bit.ly, t.me) or JD links, extract them exactly.
-4. Map the extracted details to the standard JSON schema slots.
-5. For EVERY remaining piece of text not covered by standard slots, create entries in "additional_extracted_info" with proper labels and categories.
-6. Extract all eligible branches (e.g., CSE, IT, ECE, BCA, BBA, MBA, IMBA), batches (e.g., 2026 passing out batch), companies, deadlines, CTC, stipend info, dress code, documents to carry, reporting instructions, contact details, and any other information.
-7. Use null for missing standard fields. NEVER use "Not Mentioned" or similar placeholders.
-8. If a slot explicitly states "NA" or "No" in the source, keep it EXACTLY as "NA" or the respective negative value.
+Please transcribe all text visible in this image accurately.
+IMPORTANT: If you see any URLs (links) that are split across multiple lines, you MUST reconstruct them into a single continuous URL without any spaces or line breaks.
+Do not format as markdown. Just output the raw text.
 `;
 
       let lastError: any = null;
@@ -267,33 +260,25 @@ Analyze this screenshot/image with maximum precision.
 
       for (const modelName of modelsToTry) {
         try {
-          const model = genAI.getGenerativeModel({ 
-            model: modelName,
-            systemInstruction: SYSTEM_PROMPT
-          });
+          const model = genAI.getGenerativeModel({ model: modelName });
           const result = await model.generateContent([promptText, imagePart]);
           const response = await result.response;
           rawText = response.text().trim();
           if (rawText) {
-            console.log(`Successfully parsed image using model: ${modelName}`);
+            console.log(`Successfully transcribed image using model: ${modelName}`);
             lastError = null;
             break;
           }
         } catch (err: any) {
-          console.warn(`Model ${modelName} failed for image parse:`, err.message || err);
+          console.warn(`Model ${modelName} failed for image transcription:`, err.message || err);
           lastError = err;
         }
       }
 
       if (lastError) throw lastError;
 
-      let jsonString = rawText;
-      const firstBrace = rawText.indexOf('{');
-      const lastBrace = rawText.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        jsonString = rawText.substring(firstBrace, lastBrace + 1);
-      }
-      initialJson = JSON.parse(jsonString);
+      // Feed transcription into inputContext so the text parsing pipeline can handle it
+      inputContext = rawText;
     } else {
       return NextResponse.json({ error: 'Invalid method.' }, { status: 400 });
     }
@@ -341,8 +326,8 @@ Analyze this screenshot/image with maximum precision.
     const initialJsonString = JSON.stringify(initialJson);
     extractedUrls.push(...extractUrlsFromText(initialJsonString));
     
-    // Scan raw input text for links if not image
-    if (method !== 'image' && inputContext) {
+    // Scan raw input text for links
+    if (inputContext) {
       extractedUrls.push(...extractUrlsFromText(inputContext));
     }
 
