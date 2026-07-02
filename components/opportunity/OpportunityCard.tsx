@@ -79,51 +79,130 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
     ? Math.ceil((new Date(opportunity.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) < 0
     : false;
 
-  // Resolve eligibility data
+  // Resolve eligibility, basic info, job details, and other group structures
+  const bi = opportunity.basic_information || {};
   const el = opportunity.eligibility || {};
+  const jd = opportunity.job_details || {};
+  const rp = opportunity.recruitment_process || {};
+  const sch = opportunity.schedule || {};
+  const comm = opportunity.communication || {};
+  const atts = opportunity.attachments || {};
+
+  // Generic helper to search in additional_extracted_info
+  const findInAdditionalInfo = (keywords: string[]) => {
+    if (!opportunity.additional_extracted_info) return null;
+    const match = opportunity.additional_extracted_info.find((item: any) =>
+      keywords.some(kw => item.label.toLowerCase().includes(kw.toLowerCase()))
+    );
+    return match ? match.value : null;
+  };
 
   // Resolve Bond Detail
   let bondVal = el.bond_details || el.bond || null;
-  if (!bondVal && opportunity.additional_extracted_info) {
-    const bondItem = opportunity.additional_extracted_info.find((item: any) =>
-      item.label.toLowerCase().includes('bond')
-    );
-    if (bondItem) bondVal = bondItem.value;
+  if (!bondVal) {
+    bondVal = findInAdditionalInfo(['bond']);
   }
 
   // Resolve About Company
   let aboutVal = opportunity.about_company || null;
-  if (!aboutVal && opportunity.additional_extracted_info) {
-    const aboutItem = opportunity.additional_extracted_info.find((item: any) =>
-      item.label.toLowerCase().includes('about')
-    );
-    if (aboutItem) aboutVal = aboutItem.value;
+  if (!aboutVal) {
+    aboutVal = findInAdditionalInfo(['about company', 'about']);
   }
+
+  // Resolve Website
+  const websiteVal = opportunity.company_website || bi.company_website || opportunity.website || findInAdditionalInfo(['website', 'site', 'url']);
+
+  // Resolve Registration/Apply Link
+  const regLinkVal = opportunity.apply_link || opportunity.registration_link || bi.jd_link || atts.jd_link || findInAdditionalInfo(['registration link', 'apply link', 'jd link']);
+
+  // Resolve Last Date/Deadline
+  const deadlineVal = opportunity.deadline || bi.application_deadline || findInAdditionalInfo(['deadline', 'last date']);
+
+  // Resolve Course
+  const courseVal = opportunity.education_qualification || el.educational_qualification || el.education_qualification || findInAdditionalInfo(['course', 'education']);
+
+  // Resolve Branch
+  const branchVal = Array.isArray(el.branches)
+    ? el.branches.join(', ')
+    : el.branches || el.eligible_branches || findInAdditionalInfo(['branch', 'branches']);
+
+  // Resolve Cut off
+  const cutoffVal = el.cgpa || el.cutoff_criteria || el.minimum_cgpa_percentage || findInAdditionalInfo(['cut-off', 'cutoff', 'cgpa']);
+
+  // Resolve Batch
+  const batchVal = el.batch || el.passing_batch || findInAdditionalInfo(['batch']);
+
+  // Resolve Salary
+  const salaryVal = opportunity.salary || jd.salary_ctc || jd.stipend || findInAdditionalInfo(['salary', 'ctc', 'stipend', 'compensation']);
+
+  // Resolve Role/Designation
+  const roleVal = opportunity.role || jd.job_role || findInAdditionalInfo(['designation', 'job role', 'role']);
+
+  // Resolve Responsibilities
+  const responsibilitiesVal = Array.isArray(opportunity.responsibilities)
+    ? opportunity.responsibilities.join(' • ')
+    : opportunity.responsibilities || findInAdditionalInfo(['responsibilities', 'responsibility', 'roles']);
+
+  // Resolve Selection Process
+  const selectionProcessVal = Array.isArray(opportunity.interview_process?.description)
+    ? opportunity.interview_process.description.join(' → ')
+    : el.hiring_process || rp.hiring_process || findInAdditionalInfo(['selection process', 'hiring process', 'rounds']);
+
+  // Resolve Interview Location
+  const interviewLocationVal = opportunity.venue || el.venue || sch.venue || findInAdditionalInfo(['interview location', 'venue']);
+
+  // Resolve Campus Interview Date
+  const campusDateVal = el.event_date || sch.event_date || findInAdditionalInfo(['interview date', 'campus interview', 'event date']);
+
+  // Resolve Tentative Joining Date
+  const joiningDateVal = opportunity.joining_date || findInAdditionalInfo(['joining date']);
+
+  // Resolve Gender Preference
+  const genderVal = opportunity.gender_eligibility || el.gender_eligibility || findInAdditionalInfo(['gender']);
+
+  // Resolve Joining Location
+  const joiningLocationVal = opportunity.location || el.location || jd.location || jd.work_mode || findInAdditionalInfo(['joining locations', 'joining location', 'location', 'work mode']);
+
+  // Resolve Segment
+  const segmentVal = opportunity.type || bi.opportunity_type || findInAdditionalInfo(['job segment', 'type', 'opportunity type']);
+
+  // Resolve Terms
+  const termsVal = opportunity.instructions || comm.additional_instructions || findInAdditionalInfo(['terms', 'guidelines', 'condition']);
+
+  // Resolve Skills
+  const skillsVal = Array.isArray(opportunity.skills)
+    ? opportunity.skills.join(', ')
+    : opportunity.skills || findInAdditionalInfo(['skill', 'skills']);
 
   // Gather values with fallbacks
   const fields = {
-    company: opportunity.company || 'Not Declared',
+    company: opportunity.company || bi.company_name || findInAdditionalInfo(['company name', 'company']) || 'Not Declared',
     aboutCompany: aboutVal || 'Not Specified',
-    website: opportunity.company_website || 'Not Specified',
-    course: opportunity.education_qualification || el.educational_qualification || 'Not Specified',
-    branch: Array.isArray(el.branches) ? el.branches.join(', ') : el.branches || el.eligible_branches || 'Not Specified',
-    cutoff: el.cgpa || el.cutoff_criteria || el.minimum_cgpa_percentage || 'Not Specified',
-    regLink: opportunity.apply_link || opportunity.registration_link || 'Not Specified',
-    lastDate: opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not Declared',
-    batch: el.batch || el.passing_batch || 'Not Specified',
-    salary: opportunity.salary || el.salary_ctc || 'Not Declared',
-    role: opportunity.role || el.job_role || 'Not Declared',
-    responsibilities: Array.isArray(opportunity.responsibilities) ? opportunity.responsibilities.join(' • ') : opportunity.responsibilities || 'Not Specified',
-    selectionProcess: Array.isArray(opportunity.interview_process?.description) ? opportunity.interview_process.description.join(' → ') : el.hiring_process || 'Not Specified',
-    interviewLocation: opportunity.venue || el.venue || 'Not Specified',
-    campusDate: el.event_date || 'Not Specified',
-    joiningDate: opportunity.joining_date || 'Not Specified',
-    gender: opportunity.gender_eligibility || el.gender_eligibility || 'Not Specified',
-    joiningLocation: opportunity.location || el.location || 'Not Specified',
+    website: websiteVal || 'Not Specified',
+    course: courseVal || 'Not Specified',
+    branch: branchVal || 'Not Specified',
+    cutoff: cutoffVal || 'Not Specified',
+    regLink: regLinkVal || 'Not Specified',
+    lastDate: (() => {
+      if (!deadlineVal) return 'Not Declared';
+      const parsed = new Date(deadlineVal);
+      if (isNaN(parsed.getTime())) return String(deadlineVal);
+      return parsed.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    })(),
+    batch: batchVal || 'Not Specified',
+    salary: salaryVal || 'Not Declared',
+    role: roleVal || 'Not Declared',
+    responsibilities: responsibilitiesVal || 'Not Specified',
+    selectionProcess: selectionProcessVal || 'Not Specified',
+    interviewLocation: interviewLocationVal || 'Not Specified',
+    campusDate: campusDateVal || 'Not Specified',
+    joiningDate: joiningDateVal || 'Not Specified',
+    gender: genderVal || 'Not Specified',
+    joiningLocation: joiningLocationVal || 'Not Specified',
     bond: bondVal || 'Not Specified',
-    segment: opportunity.type || 'Not Specified',
-    terms: opportunity.instructions || 'Not Specified',
-    skills: Array.isArray(opportunity.skills) ? opportunity.skills.join(', ') : opportunity.skills || 'Not Specified',
+    segment: segmentVal || 'Not Specified',
+    terms: termsVal || 'Not Specified',
+    skills: skillsVal || 'Not Specified',
   };
 
   const attachments = opportunity.attachments_json || [];
