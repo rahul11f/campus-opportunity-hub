@@ -121,11 +121,6 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
   // Resolve Course
   const courseVal = opportunity.education_qualification || el.educational_qualification || el.education_qualification || findInAdditionalInfo(['course', 'education']);
 
-  // Resolve Branch
-  const branchVal = Array.isArray(el.branches)
-    ? el.branches.join(', ')
-    : el.branches || el.eligible_branches || findInAdditionalInfo(['branch', 'branches']);
-
   // Resolve Cut off
   const cutoffVal = el.cgpa || el.cutoff_criteria || el.minimum_cgpa_percentage || findInAdditionalInfo(['cut-off', 'cutoff', 'cgpa']);
 
@@ -139,14 +134,27 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
   const roleVal = opportunity.role || jd.job_role || findInAdditionalInfo(['designation', 'job role', 'role']);
 
   // Resolve Responsibilities
-  const responsibilitiesVal = Array.isArray(opportunity.responsibilities)
-    ? opportunity.responsibilities.join(' • ')
-    : opportunity.responsibilities || findInAdditionalInfo(['responsibilities', 'responsibility', 'roles']);
+  let responsibilitiesVal = null;
+  if (Array.isArray(opportunity.responsibilities) && opportunity.responsibilities.length > 0) {
+    responsibilitiesVal = opportunity.responsibilities.join(' • ');
+  } else if (typeof opportunity.responsibilities === 'string' && opportunity.responsibilities.trim() !== '') {
+    responsibilitiesVal = opportunity.responsibilities;
+  }
+  if (!responsibilitiesVal) {
+    responsibilitiesVal = findInAdditionalInfo(['responsibilities', 'responsibility', 'roles', 'role']);
+  }
 
   // Resolve Selection Process
-  const selectionProcessVal = Array.isArray(opportunity.interview_process?.description)
-    ? opportunity.interview_process.description.join(' → ')
-    : el.hiring_process || rp.hiring_process || findInAdditionalInfo(['selection process', 'hiring process', 'rounds']);
+  let selectionProcessVal = null;
+  const desc = opportunity.interview_process?.description;
+  if (Array.isArray(desc) && desc.length > 0) {
+    selectionProcessVal = desc.join(' → ');
+  } else if (typeof desc === 'string' && desc.trim() !== '') {
+    selectionProcessVal = desc;
+  }
+  if (!selectionProcessVal) {
+    selectionProcessVal = el.hiring_process || rp.hiring_process || findInAdditionalInfo(['selection process', 'hiring process', 'rounds']);
+  }
 
   // Resolve Interview Location
   const interviewLocationVal = opportunity.venue || el.venue || sch.venue || findInAdditionalInfo(['interview location', 'venue']);
@@ -170,9 +178,26 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
   const termsVal = opportunity.instructions || comm.additional_instructions || findInAdditionalInfo(['terms', 'guidelines', 'condition']);
 
   // Resolve Skills
-  const skillsVal = Array.isArray(opportunity.skills)
-    ? opportunity.skills.join(', ')
-    : opportunity.skills || findInAdditionalInfo(['skill', 'skills']);
+  let skillsVal = null;
+  if (Array.isArray(opportunity.skills) && opportunity.skills.length > 0) {
+    skillsVal = opportunity.skills.join(', ');
+  } else if (typeof opportunity.skills === 'string' && opportunity.skills.trim() !== '') {
+    skillsVal = opportunity.skills;
+  }
+  if (!skillsVal) {
+    skillsVal = findInAdditionalInfo(['skill', 'skills']);
+  }
+
+  // Resolve Branch safely
+  let branchVal = null;
+  if (Array.isArray(el.branches) && el.branches.length > 0) {
+    branchVal = el.branches.join(', ');
+  } else if (typeof el.branches === 'string' && el.branches.trim() !== '') {
+    branchVal = el.branches;
+  }
+  if (!branchVal) {
+    branchVal = el.eligible_branches || findInAdditionalInfo(['branch', 'branches']);
+  }
 
   // Gather values with fallbacks
   const fields = {
@@ -204,6 +229,8 @@ export function OpportunityCard({ opportunity, onViewDetails }: { opportunity: a
     terms: termsVal || 'Not Specified',
     skills: skillsVal || 'Not Specified',
   };
+
+  console.log('OpportunityCard fields resolved:', { raw: opportunity, resolved: fields });
 
   const attachments = opportunity.attachments_json || [];
   const pdfAttachments = attachments.filter((a: any) => a.file_type === 'pdf');

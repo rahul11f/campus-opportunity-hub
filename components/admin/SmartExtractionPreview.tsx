@@ -466,9 +466,9 @@ function createPreviewOpportunity(opp: any) {
 
   return {
     ...opp,
-    company: opp.company || opp.basic_information?.company_name || 'Company Name',
-    role: opp.role || opp.job_details?.job_role || 'Job Role',
-    type: opp.type || opp.basic_information?.opportunity_type || 'placement',
+    company: opp.company || opp.basic_information?.company_name || undefined,
+    role: opp.role || opp.job_details?.job_role || undefined,
+    type: opp.type || opp.basic_information?.opportunity_type || undefined,
     salary: opp.salary || opp.job_details?.salary_ctc || null,
     location: opp.location || opp.job_details?.location || null,
     deadline: opp.deadline || opp.basic_information?.application_deadline || null,
@@ -477,8 +477,8 @@ function createPreviewOpportunity(opp: any) {
     apply_link: opp.apply_link || opp.basic_information?.jd_link || opp.attachments?.jd_link || null,
     source_link: opp.source_link || null,
     company_logo: opp.company_logo || opp.basic_information?.company_logo || null,
-    skills: opp.skills || [],
-    responsibilities: opp.responsibilities || [],
+    skills: opp.skills || undefined,
+    responsibilities: opp.responsibilities || undefined,
     eligibility: {
       ...el,
       cgpa: el.cgpa || el.minimum_cgpa_percentage || null,
